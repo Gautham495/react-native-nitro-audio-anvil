@@ -18,21 +18,14 @@ export type { PCMChunk } from './types/PCMChunk';
 
 export type { SpeakerWindow } from './types/SpeakerWindow';
 
-export type {
-  AnvilPermissionStatus,
-  AnvilPermissionStatus as AnvilPermissionStatus,
-} from './types/AnvilPermissionStatus';
+export type { AnvilPermissionStatus as PermissionStatus } from './types/AnvilPermissionStatus';
+
+export type { AnvilListenerSubscription as ListenerSubscription } from './types/AnvilListenerSubscription';
 
 export type {
-  AnvilListenerSubscription,
-  AnvilListenerSubscription as AnvilListenerSubscription,
-} from './types/AnvilListenerSubscription';
-
-export type {
-  AnvilInterruptionReason,
-  AnvilInterruptionReason as AnvilInterruptionReason,
+  AnvilInterruptionReason as InterruptionReason,
   AnvilInterruptionPhase as InterruptionPhase,
-  AnvilInterruptionEvent as AnvilInterruptionEvent,
+  AnvilInterruptionEvent as InterruptionEvent,
 } from './types/AnvilInterruptionEvent';
 
 export type {
