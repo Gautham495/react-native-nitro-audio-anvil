@@ -1,11 +1,6 @@
 #include <jni.h>
-#include "nitroaudioanvilOnLoad.hpp"
-
-#include <fbjni/fbjni.h>
-
+#include "NitroAudioAnvilOnLoad.hpp"
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void*) {
-  return facebook::jni::initialize(vm, []() {
-    margelo::nitro::nitroaudioanvil::registerAllNatives();
-  });
+  return margelo::nitro::audioanvil::initialize(vm);
 }

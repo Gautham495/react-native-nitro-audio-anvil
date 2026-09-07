@@ -1,28 +1,27 @@
 buildscript {
-  ext.NitroAudioAnvil = [
-    kotlinVersion: "2.0.21",
-    minSdkVersion: 24,
-    compileSdkVersion: 36
-  ]
-
-  ext.getExtOrDefault = { prop ->
-    if (rootProject.ext.has(prop)) {
-      return rootProject.ext.get(prop)
+  // Only needed when this library is built standalone; a React Native app already provides AGP + KGP.
+  if (project == rootProject) {
+    repositories {
+      google()
+      mavenCentral()
     }
-
-    return NitroAudioAnvil[prop]
+    dependencies {
+      classpath "com.android.tools.build:gradle:8.7.2"
+      classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${project.properties['NitroAudioAnvil_kotlinVersion']}"
+    }
   }
+}
 
-  repositories {
-    google()
-    mavenCentral()
-  }
+apply plugin: "com.android.library"
+apply plugin: "org.jetbrains.kotlin.android"
+apply from: '../nitrogen/generated/android/NitroAudioAnvil+autolinking.gradle'
 
-  dependencies {
-    classpath "com.android.tools.build:gradle:8.7.2"
-    // noinspection DifferentKotlinGradleVersion
-    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${getExtOrDefault('kotlinVersion')}"
-  }
+def getExtOrDefault(name) {
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties["NitroAudioAnvil_" + name]
+}
+
+def getExtOrIntegerDefault(name) {
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["NitroAudioAnvil_" + name]).toInteger()
 }
 
 def reactNativeArchitectures() {
@@ -30,34 +29,21 @@ def reactNativeArchitectures() {
   return value ? value.split(",") : ["armeabi-v7a", "x86", "x86_64", "arm64-v8a"]
 }
 
-apply plugin: "com.android.library"
-apply plugin: "kotlin-android"
-apply from: '../nitrogen/generated/android/nitroaudioanvil+autolinking.gradle'
-
-apply plugin: "com.facebook.react"
-
 android {
-  namespace "com.margelo.nitro.nitroaudioanvil"
+  namespace "com.margelo.nitro.audioanvil"
 
-  compileSdkVersion getExtOrDefault("compileSdkVersion")
+  ndkVersion getExtOrDefault("ndkVersion")
+  compileSdkVersion getExtOrIntegerDefault("compileSdkVersion")
 
   defaultConfig {
-    minSdkVersion getExtOrDefault("minSdkVersion")
+    minSdkVersion getExtOrIntegerDefault("minSdkVersion")
+    targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
 
     externalNativeBuild {
       cmake {
         cppFlags "-frtti -fexceptions -Wall -fstack-protector-all"
-        arguments "-DANDROID_STL=c++_shared", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+        arguments "-DANDROID_STL=c++_shared"
         abiFilters (*reactNativeArchitectures())
-
-        buildTypes {
-          debug {
-            cppFlags "-O1 -g"
-          }
-          release {
-            cppFlags "-O2"
-          }
-        }
       }
     }
   }
@@ -68,16 +54,15 @@ android {
     }
   }
 
-  packaging {
-    resources {
-      excludes += [
-        "META-INF",
-        "META-INF/**"
-      ]
-    }
+  buildFeatures {
+    buildConfig true
+    prefab true
+  }
 
-    jniLibs {
-      excludes += [
+  packagingOptions {
+    excludes = [
+        "META-INF",
+        "META-INF/**",
         "**/libc++_shared.so",
         "**/libfbjni.so",
         "**/libjsi.so",
@@ -92,21 +77,32 @@ android {
         "**/libturbomodulejsijni.so",
         "**/libreact_nativemodule_core.so",
         "**/libjscexecutor.so"
-      ]
-    }
+    ]
   }
 
-  buildFeatures {
-    prefab true
+  buildTypes {
+    release {
+      minifyEnabled false
+    }
   }
 
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_17
     targetCompatibility JavaVersion.VERSION_17
   }
+
+  kotlinOptions {
+    jvmTarget = "17"
+  }
+}
+
+repositories {
+  mavenCentral()
+  google()
 }
 
 dependencies {
   implementation "com.facebook.react:react-android"
+  implementation "org.jetbrains.kotlin:kotlin-stdlib:${getExtOrDefault('kotlinVersion')}"
   implementation project(":react-native-nitro-modules")
 }

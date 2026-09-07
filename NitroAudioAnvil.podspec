@@ -19,11 +19,19 @@ Pod::Spec.new do |s|
     "cpp/**/*.{hpp,cpp}",
   ]
 
-  s.dependency 'React-jsi'
-  s.dependency 'React-callinvoker'
+  s.swift_version = "5.5"
+
+  s.frameworks = ["AVFoundation", "CallKit"]
+
+  s.pod_target_xcconfig = {
+    "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
+  }
 
   load 'nitrogen/generated/ios/NitroAudioAnvil+autolinking.rb'
   add_nitrogen_files(s)
+
+  s.dependency 'React-jsi'
+  s.dependency 'React-callinvoker'
 
   install_modules_dependencies(s)
 end

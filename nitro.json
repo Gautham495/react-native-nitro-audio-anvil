@@ -1,23 +1,25 @@
 {
-  "cxxNamespace": ["nitroaudioanvil"],
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": ["audioanvil"],
   "ios": {
     "iosModuleName": "NitroAudioAnvil"
   },
   "android": {
-    "androidNamespace": ["nitroaudioanvil"],
-    "androidCxxLibName": "nitroaudioanvil"
+    "androidNamespace": ["audioanvil"],
+    "androidCxxLibName": "NitroAudioAnvil"
   },
   "autolinking": {
-    "NitroAudioAnvil": {
+    "AnvilFactory": {
       "ios": {
         "language": "swift",
-        "implementationClassName": "NitroAudioAnvil"
+        "implementationClassName": "HybridAnvilFactory"
       },
       "android": {
         "language": "kotlin",
-        "implementationClassName": "NitroAudioAnvil"
+        "implementationClassName": "HybridAnvilFactory"
       }
     }
   },
-  "ignorePaths": ["node_modules"]
+  "ignorePaths": ["**/node_modules", "lib"],
+  "gitAttributesGeneratedFlag": true
 }

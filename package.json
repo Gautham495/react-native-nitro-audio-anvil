@@ -1,12 +1,12 @@
 {
   "name": "react-native-nitro-audio-anvil",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Test",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
   "exports": {
     ".": {
-      "react-native-nitro-audio-anvil-source": "./src/index.tsx",
+      "source": "./src/index.ts",
       "types": "./lib/typescript/src/index.d.ts",
       "default": "./lib/module/index.js"
     },
@@ -40,10 +40,7 @@
     "nitrogen": "nitrogen",
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
-    "test": "jest",
-    "release": "release-it --only-version",
-    "web": "vite",
-    "build:web": "vite build"
+    "test": "jest"
   },
   "keywords": [
     "react-native",
@@ -88,7 +85,6 @@
     "react-native": "0.85.0",
     "react-native-builder-bob": "^0.43.0",
     "react-native-nitro-modules": "^0.37.1",
-    "react-native-web": "~0.21.2",
     "release-it": "^20.2.0",
     "turbo": "^2.9.16",
     "typescript": "^6.0.3"
@@ -96,7 +92,7 @@
   "peerDependencies": {
     "react": "*",
     "react-native": "*",
-    "react-native-nitro-modules": "^0.37.1"
+    "react-native-nitro-modules": "*"
   },
   "workspaces": [
     "example"
