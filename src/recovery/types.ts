@@ -1,5 +1,4 @@
 import type { RecordingSegment } from '../types/RecordingSegment';
-
 import type { OrphanedRecording } from '../types/OrphanedRecording';
 
 /**

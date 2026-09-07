@@ -33,4 +33,10 @@ class HybridAnvilFactory : HybridAnvilFactorySpec() {
       OrphanScanner.discover(AnvilPaths.directory(directory)).toTypedArray()
     }
   }
+
+  override fun concatenate(segmentPaths: Array<String>, outputPath: String): Promise<RecordingSegment> {
+    return Promise.parallel {
+      WavConcatenator.concatenate(segmentPaths.map { AnvilPaths.directory(it) }, AnvilPaths.directory(outputPath))
+    }
+  }
 }

@@ -19,6 +19,7 @@ internal class AnvilAudioFocus(context: Context, private val handler: Handler) {
   private var focusRequest: AudioFocusRequest? = null
   private var audioSessionId = 0
   private var interrupted = false
+  private var deviceCallbackPrimed = false
 
   var onInterruptionBegan: ((InterruptionReason) -> Unit)? = null
   var onInterruptionEnded: ((Boolean) -> Unit)? = null
@@ -43,6 +44,11 @@ internal class AnvilAudioFocus(context: Context, private val handler: Handler) {
 
   private val deviceCallback = object : AudioDeviceCallback() {
     override fun onAudioDevicesAdded(added: Array<out AudioDeviceInfo>) {
+      // The first callback after registration lists the devices already connected — not a change.
+      if (!deviceCallbackPrimed) {
+        deviceCallbackPrimed = true
+        return
+      }
       val input = added.firstOrNull { it.isSource } ?: return
       onRouteChanged?.invoke(RouteChangeReason.CONNECTED, input.productName.toString())
     }
@@ -56,6 +62,7 @@ internal class AnvilAudioFocus(context: Context, private val handler: Handler) {
   fun acquire(sessionId: Int) {
     audioSessionId = sessionId
     interrupted = false
+    deviceCallbackPrimed = false
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val attributes = AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_MEDIA)

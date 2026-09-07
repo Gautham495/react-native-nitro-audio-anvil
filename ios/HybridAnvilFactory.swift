@@ -26,4 +26,10 @@ final class HybridAnvilFactory: HybridAnvilFactorySpec {
       try OrphanScanner.discover(directory: URL.anvilDirectory(directory))
     }
   }
+
+  func concatenate(segmentPaths: [String], outputPath: String) throws -> Promise<RecordingSegment> {
+    return Promise.parallel(Self.queue) {
+      try WavConcatenator.concatenate(inputs: segmentPaths.map { URL.anvilFile($0) }, output: URL.anvilFile(outputPath))
+    }
+  }
 }

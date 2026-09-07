@@ -3,7 +3,6 @@ import {
   type RecorderConfig,
   type RecordingSegment,
 } from '../index';
-
 import type { RecoveryMarker } from './types';
 
 /**

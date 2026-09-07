@@ -1,23 +1,13 @@
 import type { HybridObject } from 'react-native-nitro-modules';
-
 import type { ListenerSubscription } from '../types/ListenerSubscription';
-
 import type { RecorderState } from '../types/RecorderState';
-
 import type { RecordingSegment } from '../types/RecordingSegment';
-
 import type { PCMChunk } from '../types/PCMChunk';
-
 import type { SpeakerWindow } from '../types/SpeakerWindow';
-
 import type { InterruptionEvent } from '../types/InterruptionEvent';
-
 import type { RouteChangeEvent } from '../types/RouteChangeEvent';
-
 import type { PermissionStatus } from '../types/PermissionStatus';
-
 import type { StorageWarningEvent } from '../types/StorageWarningEvent';
-
 import type { RecorderError } from '../types/RecorderError';
 
 /**

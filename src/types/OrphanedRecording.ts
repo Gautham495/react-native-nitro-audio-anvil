@@ -1,5 +1,4 @@
 import type { RecordingSegment } from './RecordingSegment';
-
 import type { AnvilFactory } from '../specs/AnvilFactory.nitro';
 
 /**

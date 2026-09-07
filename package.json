@@ -1,7 +1,7 @@
 {
   "name": "react-native-nitro-audio-anvil",
   "version": "1.0.0",
-  "description": "Test",
+  "description": "Advanced Audio Recording And PCM Streaming of the same audio bytes which can be used for Cloud Transcription",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
   "exports": {
@@ -44,8 +44,11 @@
   },
   "keywords": [
     "react-native",
-    "ios",
-    "android"
+    "avaudioengine",
+    "avaudiorecorder",
+    "mediarecorder",
+    "nitro",
+    "reactnative"
   ],
   "repository": {
     "type": "git",

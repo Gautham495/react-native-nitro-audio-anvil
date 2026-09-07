@@ -37,21 +37,19 @@ final class PCMChunker {
   }
 
   private func emit(_ data: Data) {
-      let samples = data.count / 2
-
-      do {
-          let chunk = try PCMChunk(
-              buffer: ArrayBuffer.copy(data: Data(data)),
-              timestampMs: Double(pendingStartSamples) / Double(sampleRate) * 1000.0,
-              durationMs: Double(samples) / Double(sampleRate) * 1000.0,
-              sequenceNumber: Double(sequence)
-          )
-
-          sequence += 1
-          onChunk(chunk)
-
-      } catch {
-          print("❌ Failed to create PCMChunk: \(error)")
-      }
+    let samples = data.count / 2
+    do {
+      let chunk = PCMChunk(
+        buffer: try ArrayBuffer.copy(data: Data(data)),
+        timestampMs: Double(pendingStartSamples) / Double(sampleRate) * 1000.0,
+        durationMs: Double(samples) / Double(sampleRate) * 1000.0,
+        sequenceNumber: Double(sequence)
+      )
+      sequence += 1
+      onChunk(chunk)
+    } catch {
+      // ArrayBuffer allocation failed — drop this chunk rather than crash the capture thread.
+      // sequence is NOT incremented, so the gap is detectable via PCMChunk.sequenceNumber.
+    }
   }
 }

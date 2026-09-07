@@ -1,31 +1,46 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
-  Button,
   Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-import RNFS from 'react-native-nitro-fs';
-
 import {
   Anvil,
-  createFileMarkerStore,
-  createRecordingService,
   type AnvilRecorder,
   type ListenerSubscription,
   type PermissionStatus,
   type RecorderConfig,
   type RecorderState,
   type RecordingSegment,
-  type RecoveredRecording,
 } from 'react-native-nitro-audio-anvil';
 
-const OUTPUT_DIRECTORY = `${RNFS.DOCUMENT_DIR}/anvil-test`;
+import Share from 'react-native-share';
+
+import {
+  OUTPUT_DIRECTORY,
+  ensureOutputDirectory,
+  recorderService,
+} from './helpers/recorderService';
+import { playTrack, toFileUrl } from './helpers/playerBridge';
+import { Card, Row } from './helpers/ui/Card';
+import { Button, ButtonRow } from './helpers/ui/Button';
+import { LevelMeter } from './helpers/ui/LevelMeter';
+import { PlayerCard } from './helpers/PlayerCard';
+import { UploadCard, type UploadTarget } from './helpers/UploadCard';
+import { RecordingsList } from './helpers/RecordingsList';
+import { EventLog } from './helpers/EventLog';
+import {
+  basename,
+  colors,
+  formatBytes,
+  formatClock,
+  spacing,
+} from './helpers/theme';
 
 const RECORDER_CONFIG: RecorderConfig = {
   outputDirectory: OUTPUT_DIRECTORY,
@@ -38,36 +53,16 @@ const RECORDER_CONFIG: RecorderConfig = {
   onInterruption: 'resume',
   keepAwakeInBackground: true,
   storageWarningBytes: 200 * 1024 * 1024,
-  notification: { title: 'Anvil test recording', text: 'Tap to return' },
+  notification: { title: 'Recording', text: 'Anvil is capturing audio' },
 };
 
-const fileSystemBridge = {
-  async readText(path: string) {
-    try {
-      return await RNFS.readFile(path, 'utf8');
-    } catch {
-      return null;
-    }
-  },
-  async writeText(path: string, contents: string) {
-    await RNFS.writeFile(path, contents, 'utf8');
-  },
-  async delete(path: string) {
-    if (await RNFS.exists(path)) await RNFS.unlink(path);
-  },
-  async list(directory: string) {
-    try {
-      return (await RNFS.readdir(directory)).map((entry) => entry.path);
-    } catch {
-      return [];
-    }
-  },
+const STATE_COLOR: Record<RecorderState, string> = {
+  idle: colors.muted,
+  recording: colors.record,
+  paused: colors.warn,
+  interrupted: colors.warn,
+  stopped: colors.muted,
 };
-
-const recorderService = createRecordingService({
-  outputDirectory: OUTPUT_DIRECTORY,
-  markerStore: createFileMarkerStore(fileSystemBridge, OUTPUT_DIRECTORY),
-});
 
 export default function App() {
   const [permission, setPermission] =
@@ -77,47 +72,75 @@ export default function App() {
   const [segmentPath, setSegmentPath] = useState('');
   const [pcmCount, setPcmCount] = useState(0);
   const [pcmBytes, setPcmBytes] = useState(0);
-  const [lastSequence, setLastSequence] = useState(-1);
   const [windowCount, setWindowCount] = useState(0);
-  const [lastRms, setLastRms] = useState(0);
+  const [rms, setRms] = useState(0);
   const [segments, setSegments] = useState<RecordingSegment[]>([]);
-  const [recovered, setRecovered] = useState<RecoveredRecording[]>([]);
+  const [fullFile, setFullFile] = useState<RecordingSegment | null>(null);
+  const [uploadTarget, setUploadTarget] = useState<UploadTarget | null>(null);
+  const [busy, setBusy] = useState(false);
   const [log, setLog] = useState<string[]>([]);
 
   const subscriptions = useRef<ListenerSubscription[]>([]);
+  const lastSequence = useRef(-1);
 
   const addLog = useCallback((line: string) => {
-    const stamp = new Date().toISOString().slice(11, 23);
-    setLog((previous) => [`${stamp} ${line}`, ...previous].slice(0, 60));
+    const stamp = new Date().toISOString().slice(11, 19);
+    setLog((previous) => [`${stamp}  ${line}`, ...previous].slice(0, 80));
   }, []);
 
-  const runRecovery = useCallback(async () => {
-    const found: RecoveredRecording[] = [];
-    try {
-      await recorderService.recoverPendingRecordings((recording) => {
-        found.push(recording);
-        addLog(
-          `RECOVERED ${recording.logicalId}: ${recording.sessions.length} session(s), ` +
-            `${recording.segments.length} segment(s), ${(recording.totalDurationMs / 1000).toFixed(1)} s`
-        );
+  // ---- stitching -------------------------------------------------------------------------------
+
+  const buildFullFile = useCallback(
+    async (parts: RecordingSegment[], name: string) => {
+      if (parts.length === 0) return null;
+      const outputPath = `${OUTPUT_DIRECTORY}/${name}-full.wav`;
+      const stitched = await Anvil.concatenate(
+        parts.map((segment) => segment.filePath),
+        outputPath
+      );
+      setFullFile(stitched);
+      setUploadTarget({
+        path: stitched.filePath,
+        sizeBytes: stitched.fileSize,
+        durationMs: stitched.durationMs,
       });
-      setRecovered(found);
-      if (found.length === 0) addLog('recovery: nothing pending');
+      addLog(
+        `full file ${basename(stitched.filePath)} ${formatClock(stitched.durationMs)} ${formatBytes(stitched.fileSize)}`
+      );
+      return stitched;
+    },
+    [addLog]
+  );
+
+  // ---- recovery --------------------------------------------------------------------------------
+
+  const runRecovery = useCallback(async () => {
+    try {
+      let found = 0;
+      await recorderService.recoverPendingRecordings(async (recording) => {
+        found++;
+        addLog(
+          `RECOVERED ${recording.logicalId}: ${recording.sessions.length} session(s), ${recording.segments.length} segment(s), ${formatClock(recording.totalDurationMs)}`
+        );
+        setSegments(recording.segments);
+        await buildFullFile(recording.segments, recording.logicalId);
+      });
+      if (found === 0) addLog('recovery: nothing pending');
     } catch (error) {
       addLog(`recovery failed: ${String(error)}`);
     }
-  }, [addLog]);
+  }, [addLog, buildFullFile]);
 
-  // Startup: make the directory, read permission, run recovery.
   useEffect(() => {
     (async () => {
-      await RNFS.mkdir(OUTPUT_DIRECTORY).catch(() => {});
+      await ensureOutputDirectory();
       setPermission(Anvil.getPermissionStatus());
       await runRecovery();
     })();
   }, [runRecovery]);
 
-  // Poll the snapshot properties while a recorder exists.
+  // ---- live snapshot ---------------------------------------------------------------------------
+
   useEffect(() => {
     const interval = setInterval(() => {
       const recorder = recorderService.active;
@@ -125,69 +148,67 @@ export default function App() {
       setState(recorder.state);
       setDurationMs(recorder.totalDurationMs);
       setSegmentPath(recorder.currentSegmentPath);
-    }, 250);
+    }, 200);
     return () => clearInterval(interval);
   }, []);
 
-  const requestPermission = useCallback(async () => {
-    const status = await Anvil.requestPermission();
-    setPermission(status);
-    addLog(`permission: ${status}`);
-  }, [addLog]);
+  // ---- listeners -------------------------------------------------------------------------------
 
   const wireListeners = useCallback(
     (recorder: AnvilRecorder) => {
       subscriptions.current.forEach((s) => s.remove());
+      lastSequence.current = -1;
       subscriptions.current = [
-        // Stream 1: PCM chunks. Forward `chunk.buffer` to your streaming speech-to-text socket here.
+        // Stream 1 — PCM chunks. Forward `chunk.buffer` to your streaming speech-to-text socket.
         recorder.addPCMListener((chunk) => {
           setPcmCount((n) => n + 1);
           setPcmBytes((n) => n + chunk.buffer.byteLength);
-          setLastSequence((previous) => {
-            if (previous >= 0 && chunk.sequenceNumber !== previous + 1) {
-              addLog(
-                `PCM GAP: expected ${previous + 1}, got ${chunk.sequenceNumber}`
-              );
-            }
-            return chunk.sequenceNumber;
-          });
+          if (
+            lastSequence.current >= 0 &&
+            chunk.sequenceNumber !== lastSequence.current + 1
+          ) {
+            addLog(
+              `PCM GAP expected ${lastSequence.current + 1} got ${chunk.sequenceNumber}`
+            );
+          }
+          lastSequence.current = chunk.sequenceNumber;
         }),
-        // Stream 2: speaker windows. Send `window.buffer` to your speaker-embedding model here.
+        // Stream 2 — speaker windows. Send `window.buffer` to your speaker-embedding model.
         recorder.addSpeakerWindowListener((window) => {
           setWindowCount((n) => n + 1);
-          setLastRms(window.rms);
+          setRms(window.rms);
         }),
         recorder.addInterruptionListener((event) => {
           addLog(
-            `INTERRUPTION ${event.phase} reason=${event.reason} shouldResume=${event.shouldResume}` +
-              (event.segmentPath
-                ? ` finalized=${basename(event.segmentPath)}`
-                : '') +
-              ` @${(event.timestampMs / 1000).toFixed(1)} s`
+            `INTERRUPTION ${event.phase} ${event.reason} resume=${event.shouldResume}` +
+              (event.segmentPath ? ` → ${basename(event.segmentPath)}` : '')
           );
         }),
         recorder.addRouteChangeListener((event) => {
           addLog(
-            `ROUTE ${event.reason} input="${event.inputName}" changed=${event.inputChanged}`
+            `ROUTE ${event.reason} "${event.inputName}" changed=${event.inputChanged}`
           );
         }),
         recorder.addPermissionChangeListener((status) => {
           setPermission(status);
-          addLog(`PERMISSION changed → ${status}`);
+          addLog(`PERMISSION → ${status}`);
         }),
         recorder.addStorageWarningListener((event) => {
           addLog(
-            `STORAGE WARNING free=${(event.freeBytes / 1e6).toFixed(0)} MB < ${(event.thresholdBytes / 1e6).toFixed(0)} MB`
+            `STORAGE ${formatBytes(event.freeBytes)} free < ${formatBytes(event.thresholdBytes)}`
           );
         }),
         recorder.addSegmentCompletedListener((segment) => {
+          setSegments((previous) => [
+            ...previous.filter((s) => s.filePath !== segment.filePath),
+            segment,
+          ]);
           addLog(
-            `SEGMENT #${segment.index} ${basename(segment.filePath)} ${(segment.durationMs / 1000).toFixed(1)} s ` +
-              `${(segment.fileSize / 1024).toFixed(0)} KB sha=${segment.sha256.slice(0, 8)}` +
+            `SEGMENT #${segment.index} ${formatClock(segment.durationMs)} ${formatBytes(segment.fileSize)}` +
               (segment.wasInterrupted
-                ? ` interrupted(${segment.interruptionReason ?? '?'})`
+                ? ` ⚡${segment.interruptionReason ?? ''}`
                 : '') +
-              (segment.routeChanged ? ' routeChanged' : '')
+              (segment.routeChanged ? ' 🎧' : '')
           );
         }),
         recorder.addErrorListener((error) => {
@@ -198,230 +219,292 @@ export default function App() {
     [addLog]
   );
 
-  const start = useCallback(async () => {
+  // ---- controls --------------------------------------------------------------------------------
+
+  const requestPermission = useCallback(async () => {
+    const status = await Anvil.requestPermission();
+    setPermission(status);
+    addLog(`permission ${status}`);
+  }, [addLog]);
+
+  const record = useCallback(async () => {
+    setBusy(true);
     try {
       setPcmCount(0);
       setPcmBytes(0);
-      setLastSequence(-1);
       setWindowCount(0);
+      setRms(0);
       setSegments([]);
+      setFullFile(null);
+      setUploadTarget(null);
       const recorder = await recorderService.begin({
         logicalId: `recording-${Date.now()}`,
         config: RECORDER_CONFIG,
       });
       wireListeners(recorder);
-      addLog(`started session ${recorder.sessionId}`);
+      setState('recording');
+      addLog(`session ${recorder.sessionId}`);
     } catch (error) {
       addLog(`start failed: ${String(error)}`);
-      Alert.alert('start failed', String(error));
+      Alert.alert('Could not start', String(error));
+    } finally {
+      setBusy(false);
     }
   }, [wireListeners, addLog]);
 
   const pause = useCallback(async () => {
-    try {
-      await recorderService.active?.pause();
-      addLog('paused');
-    } catch (error) {
-      addLog(`pause failed: ${String(error)}`);
-    }
+    await recorderService.active
+      ?.pause()
+      .catch((error) => addLog(`pause failed: ${String(error)}`));
+    setState('paused');
   }, [addLog]);
 
   const resume = useCallback(async () => {
-    try {
-      await recorderService.active?.resume();
-      addLog('resumed');
-    } catch (error) {
-      addLog(`resume failed: ${String(error)}`);
-    }
+    await recorderService.active
+      ?.resume()
+      .catch((error) => addLog(`resume failed: ${String(error)}`));
+    setState('recording');
   }, [addLog]);
 
   const rotate = useCallback(async () => {
     try {
       const segment = await recorderService.active?.rotateSegment();
-      addLog(
-        `rotated → #${segment?.index} ${basename(segment?.filePath ?? '')}`
-      );
+      if (segment) addLog(`rotated → #${segment.index}`);
     } catch (error) {
       addLog(`rotate failed: ${String(error)}`);
     }
   }, [addLog]);
 
-  const extractLast10s = useCallback(async () => {
-    const recorder = recorderService.active;
-    if (!recorder) return;
-    const end = recorder.totalDurationMs;
-    const startMs = Math.max(0, end - 10_000);
-    try {
-      const path = await recorder.extractRange(startMs, end);
-      addLog(
-        `extracted ${startMs.toFixed(0)}–${end.toFixed(0)} ms → ${basename(path)}`
-      );
-    } catch (error) {
-      addLog(`extract failed: ${String(error)}`);
-    }
-  }, [addLog]);
-
   const stop = useCallback(async () => {
+    setBusy(true);
+    const logicalId =
+      recorderService.activeLogicalId ?? `recording-${Date.now()}`;
     try {
       const finished = await recorderService.end();
       subscriptions.current.forEach((s) => s.remove());
       subscriptions.current = [];
+      setState('stopped');
+      setSegmentPath('');
+      setRms(0);
       setSegments(finished);
-      const total = finished.reduce(
-        (sum, segment) => sum + segment.durationMs,
-        0
-      );
       addLog(
-        `stopped: ${finished.length} segment(s), total ${(total / 1000).toFixed(1)} s`
+        `stopped: ${finished.length} segment(s), ${formatClock(finished.reduce((sum, s) => sum + s.durationMs, 0))}`
       );
+      await buildFullFile(finished, logicalId);
     } catch (error) {
       addLog(`stop failed: ${String(error)}`);
+    } finally {
+      setBusy(false);
     }
-  }, [addLog]);
+  }, [addLog, buildFullFile]);
 
-  const simulateCrash = useCallback(() => {
-    addLog('crashing in 1 s — reopen the app and watch for RECOVERED');
-    setTimeout(() => {
-      throw new Error('Anvil crash test');
-    }, 1000);
-  }, [addLog]);
+  const playSegment = useCallback(
+    async (segment: RecordingSegment, title: string) => {
+      try {
+        await playTrack({
+          id: segment.filePath,
+          title,
+          url: toFileUrl(segment.filePath),
+          durationSec: segment.durationMs / 1000,
+        });
+      } catch (error) {
+        addLog(`play failed: ${String(error)}`);
+      }
+    },
+    [addLog]
+  );
+
+  const playRemote = useCallback(
+    async (url: string) => {
+      addLog(`play uploaded: ${url}`);
+      try {
+        await playTrack({
+          id: url,
+          title: 'Uploaded recording',
+          url,
+          durationSec: (fullFile?.durationMs ?? 0) / 1000,
+        });
+      } catch (error) {
+        addLog(`remote play failed: ${String(error)}`);
+      }
+    },
+    [addLog, fullFile]
+  );
+
+  const shareFile = useCallback(
+    async (segment: RecordingSegment) => {
+      try {
+        await Share.open({
+          url: `file://${segment.filePath}`,
+          type: 'audio/wav',
+          filename: basename(segment.filePath),
+          saveToFiles: Platform.OS === 'ios',
+        });
+        addLog(`shared ${basename(segment.filePath)}`);
+      } catch (error) {
+        if (String(error).includes('cancelled')) return;
+        addLog(`share failed: ${String(error)}`);
+      }
+    },
+    [addLog]
+  );
 
   const recording = state === 'recording';
-  const canResume = state === 'paused' || state === 'interrupted';
-  const hasRecorder = recorderService.active !== null && state !== 'stopped';
+  const active =
+    recorderService.active !== null && state !== 'stopped' && state !== 'idle';
 
   return (
-    <View style={styles.container}>
+    <View style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Anvil harness ({Platform.OS})</Text>
-
-        <Row label="Permission" value={permission} />
-        <Row label="State" value={state} />
-        <Row label="Duration" value={`${(durationMs / 1000).toFixed(1)} s`} />
-        <Row label="Segment" value={basename(segmentPath) || '—'} />
-        <Row
-          label="PCM chunks"
-          value={`${pcmCount} · ${(pcmBytes / 1024).toFixed(0)} KB · seq ${lastSequence}`}
-        />
-        <Row
-          label="Speaker windows"
-          value={`${windowCount} · rms ${lastRms.toFixed(3)}`}
-        />
-
-        <View style={styles.buttons}>
-          <Button
-            title="Request permission"
-            onPress={requestPermission}
-            disabled={permission === 'granted'}
-          />
-          <Button title="Start" onPress={start} disabled={hasRecorder} />
-          <Button title="Pause" onPress={pause} disabled={!recording} />
-          <Button title="Resume" onPress={resume} disabled={!canResume} />
-          <Button
-            title="Rotate segment"
-            onPress={rotate}
-            disabled={!recording}
-          />
-          <Button
-            title="Extract last 10 s"
-            onPress={extractLast10s}
-            disabled={!hasRecorder}
-          />
-          <Button
-            title="Stop"
-            onPress={stop}
-            disabled={!hasRecorder}
-            color="#c0392b"
-          />
-          <Button title="Run recovery now" onPress={runRecovery} />
-          <Button
-            title="Simulate crash (release builds)"
-            onPress={simulateCrash}
-            color="#7f8c8d"
-          />
+        <View style={styles.header}>
+          <Text style={styles.brand}>ANVIL</Text>
+          <Text style={styles.subtitle}>
+            corruption-proof recording ·{' '}
+            {Platform.OS === 'android' ? 'Android' : 'iOS'}
+          </Text>
         </View>
 
-        {segments.length > 0 && (
-          <Section title={`Segments (${segments.length})`}>
-            {segments.map((segment) => (
-              <Text key={segment.filePath} style={styles.mono}>
-                #{segment.index} {basename(segment.filePath)}{' '}
-                {(segment.durationMs / 1000).toFixed(1)} s @
-                {(segment.mediaStartMs / 1000).toFixed(1)} s
-                {segment.wasInterrupted
-                  ? ` interrupted(${segment.interruptionReason})`
-                  : ''}
-                {segment.routeChanged ? ' routeChanged' : ''}
-              </Text>
-            ))}
-          </Section>
-        )}
-
-        {recovered.length > 0 && (
-          <Section title={`Recovered (${recovered.length})`}>
-            {recovered.map((recording) => (
-              <Text key={recording.logicalId} style={styles.mono}>
-                {recording.logicalId}: {recording.sessions.length} session(s),{' '}
-                {recording.segments.length} segment(s),{' '}
-                {(recording.totalDurationMs / 1000).toFixed(1)} s
-              </Text>
-            ))}
-          </Section>
-        )}
-
-        <Section title="Log">
-          {log.map((line, index) => (
-            <Text key={index} style={styles.mono}>
-              {line}
+        <Card title="Recorder" badge={permission}>
+          <View style={styles.timerRow}>
+            <View
+              style={[styles.dot, { backgroundColor: STATE_COLOR[state] }]}
+            />
+            <Text style={styles.timer}>{formatClock(durationMs)}</Text>
+            <Text style={[styles.stateLabel, { color: STATE_COLOR[state] }]}>
+              {state}
             </Text>
-          ))}
-        </Section>
+          </View>
+          <LevelMeter rms={rms} active={recording} />
+          <Row label="Segment" value={basename(segmentPath) || '—'} mono />
+          <Row
+            label="PCM stream"
+            value={`${pcmCount} chunks · ${formatBytes(pcmBytes)}`}
+            mono
+          />
+          <Row
+            label="Speaker windows"
+            value={`${windowCount} · rms ${rms.toFixed(3)}`}
+            mono
+          />
+
+          {permission !== 'granted' ? (
+            <Button
+              title="Allow microphone"
+              variant="record"
+              onPress={requestPermission}
+            />
+          ) : !active ? (
+            <Button
+              title="● Record"
+              variant="record"
+              onPress={record}
+              disabled={busy}
+            />
+          ) : (
+            <>
+              <ButtonRow>
+                {recording ? (
+                  <Button title="Pause" variant="neutral" onPress={pause} />
+                ) : (
+                  <Button title="Resume" variant="neutral" onPress={resume} />
+                )}
+                <Button
+                  title="Rotate"
+                  variant="neutral"
+                  onPress={rotate}
+                  disabled={!recording}
+                />
+              </ButtonRow>
+              <Button
+                title="■ Stop"
+                variant="danger"
+                onPress={stop}
+                disabled={busy}
+              />
+            </>
+          )}
+        </Card>
+
+        <RecordingsList
+          fullFile={fullFile}
+          segments={segments}
+          onPlay={playSegment}
+          onShare={shareFile}
+          onUploadTarget={(segment) =>
+            setUploadTarget({
+              path: segment.filePath,
+              sizeBytes: segment.fileSize,
+              durationMs: segment.durationMs,
+            })
+          }
+        />
+
+        <PlayerCard />
+
+        <UploadCard
+          target={uploadTarget}
+          onUploaded={() => {}}
+          onPlayRemote={playRemote}
+          log={addLog}
+        />
+
+        <Card title="Tools">
+          <ButtonRow>
+            <Button
+              title="Run recovery"
+              variant="ghost"
+              onPress={runRecovery}
+            />
+            <Button
+              title="Simulate crash"
+              variant="ghost"
+              onPress={() => {
+                addLog(
+                  'crashing in 1 s — reopen and watch RECOVERED (release builds; dev shows a redbox)'
+                );
+                setTimeout(() => {
+                  throw new Error('Anvil crash test');
+                }, 1000);
+              }}
+            />
+          </ButtonRow>
+        </Card>
+
+        <EventLog lines={log} />
       </ScrollView>
     </View>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value}</Text>
-    </View>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {children}
-    </View>
-  );
-}
-
-function basename(path: string): string {
-  const index = path.lastIndexOf('/');
-  return index >= 0 ? path.slice(index + 1) : path;
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', paddingTop: 50 },
-  content: { padding: 16, gap: 8 },
-  title: { fontSize: 20, fontWeight: '600', marginBottom: 8 },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
-  rowLabel: { color: '#555' },
-  rowValue: { fontVariant: ['tabular-nums'] },
-  buttons: { gap: 6, marginVertical: 12 },
-  section: { marginTop: 12, gap: 2 },
-  sectionTitle: { fontWeight: '600', marginBottom: 4 },
-  mono: {
-    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }),
-    fontSize: 11,
+  safe: { flex: 1, backgroundColor: colors.background, paddingTop: 60 },
+  content: {
+    padding: spacing.lg,
+    gap: spacing.md,
+    paddingBottom: spacing.xl * 2,
+  },
+  header: { paddingVertical: spacing.sm, gap: 2 },
+  brand: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: 6,
+  },
+  subtitle: { color: colors.muted, fontSize: 13 },
+  timerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  timer: {
+    color: colors.text,
+    fontSize: 40,
+    fontWeight: '300',
+    fontVariant: ['tabular-nums'],
+    flex: 1,
+  },
+  stateLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
   },
 });

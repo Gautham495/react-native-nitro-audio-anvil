@@ -4173,6 +4173,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"base-64@npm:1.0.0":
+  version: 1.0.0
+  resolution: "base-64@npm:1.0.0"
+  checksum: 10c0/d886cb3236cee0bed9f7075675748b59b32fad623ddb8ce1793c790306aa0f76a03238cad4b3fb398abda6527ce08a5588388533a4ccade0b97e82b9da660e28
+  languageName: node
+  linkType: hard
+
 "base64-js@npm:^1.3.1, base64-js@npm:^1.5.1":
   version: 1.5.1
   resolution: "base64-js@npm:1.5.1"
@@ -6454,7 +6461,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob@npm:^13.0.6":
+"glob@npm:13.0.6, glob@npm:^13.0.6":
   version: 13.0.6
   resolution: "glob@npm:13.0.6"
   dependencies:
@@ -9672,6 +9679,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-blob-util@npm:^0.24.10":
+  version: 0.24.10
+  resolution: "react-native-blob-util@npm:0.24.10"
+  dependencies:
+    base-64: "npm:1.0.0"
+    glob: "npm:13.0.6"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/27415a364a81b5a0a165abadbae7aef70c13ce3a8bcbbab5f8d33a32cab41102d23880dfb4449a7fb856dd867140668ce006d3164ed1f9dd29218c9b4655a1b6
+  languageName: node
+  linkType: hard
+
 "react-native-builder-bob@npm:^0.43.0":
   version: 0.43.0
   resolution: "react-native-builder-bob@npm:0.43.0"
@@ -9733,12 +9753,13 @@ __metadata:
     react: "npm:19.2.3"
     react-dom: "npm:19.2.3"
     react-native: "npm:0.85.0"
+    react-native-blob-util: "npm:^0.24.10"
     react-native-builder-bob: "npm:^0.43.0"
     react-native-monorepo-config: "npm:^0.4.0"
-    react-native-nitro-cloud-uploader: "npm:^1.0.28"
-    react-native-nitro-fs: "npm:1.0.0"
+    react-native-nitro-cloud-uploader: "npm:^2.0.1"
     react-native-nitro-modules: "npm:^0.37.1"
     react-native-nitro-player: "npm:^1.6.1"
+    react-native-share: "npm:12.0.11"
   languageName: unknown
   linkType: soft
 
@@ -9780,27 +9801,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"react-native-nitro-cloud-uploader@npm:^1.0.28":
-  version: 1.0.28
-  resolution: "react-native-nitro-cloud-uploader@npm:1.0.28"
+"react-native-nitro-cloud-uploader@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "react-native-nitro-cloud-uploader@npm:2.0.1"
   peerDependencies:
     react: "*"
     react-native: "*"
     react-native-nitro-modules: "*"
-  checksum: 10c0/db10d1c78a86ca93b8ccf545568415659010ef4eef19f6d0336b74a472384a95df66eacdefcbecf140679d01470a46bbb57ffe8d96e0970121efa0c96c0a6aec
-  languageName: node
-  linkType: hard
-
-"react-native-nitro-fs@npm:1.0.0":
-  version: 1.0.0
-  resolution: "react-native-nitro-fs@npm:1.0.0"
-  dependencies:
-    react-native-safe-area-context: "npm:^5.6.2"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-    react-native-nitro-modules: "*"
-  checksum: 10c0/da60e068275d2185149e02654aab15bbb735af1f54c368a08e72a7e4891669e9d76718bf64cb9b7b8328cd0c8c92e3ffac8e30144db42cca248f2e614cd27d1d
+  checksum: 10c0/464e0fd08279507d7684825df4b6afc36291f5bd5d220db0c0625b2bdf9687f3cb2f83b919eeb1c03468a662e30895db88362c432740f231ae6c9be44c6e555a
   languageName: node
   linkType: hard
 
@@ -9825,13 +9833,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-safe-area-context@npm:^5.6.2":
-  version: 5.9.1
-  resolution: "react-native-safe-area-context@npm:5.9.1"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 10c0/ffe37c7d6ebd412673cb3042b370b2d2551b3ba32d73c51246fbd4f01bb6374ff3ec2511c96a55f62e895758ae645ac372e876fd93c690889cfd27a6daa4e389
+"react-native-share@npm:12.0.11":
+  version: 12.0.11
+  resolution: "react-native-share@npm:12.0.11"
+  checksum: 10c0/14302210055dd74e0e2d8158c2d40ecc92cc629616bdcc65817f4ccb233260608dc2aca47b5995e4103b07fea23e5f09b93476d9fc9456e22eebf4694dc9e879
   languageName: node
   linkType: hard
 

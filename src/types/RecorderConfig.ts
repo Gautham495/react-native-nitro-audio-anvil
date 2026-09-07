@@ -1,7 +1,5 @@
 import type { InterruptionPolicy } from './InterruptionPolicy';
-
 import type { NotificationConfig } from './NotificationConfig';
-
 import type { AnvilFactory } from '../specs/AnvilFactory.nitro';
 
 /**

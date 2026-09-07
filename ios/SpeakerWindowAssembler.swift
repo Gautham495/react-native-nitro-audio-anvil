@@ -48,30 +48,21 @@ final class SpeakerWindowAssembler {
   }
 
   private func emit() {
-      var sumSquares = 0.0
-
-      for sample in ring {
-          let value = Double(sample)
-          sumSquares += value * value
-      }
-
-      let rms = (sumSquares / Double(ring.count)).squareRoot() / 32768.0
-      let data = ring.withUnsafeBufferPointer { Data(buffer: $0) }
-
-      let startSamples = endSamples - windowSamples
-
-      do {
-          let window = try SpeakerWindow(
-              buffer: ArrayBuffer.copy(data: data),
-              startMs: Double(startSamples) / Double(sampleRate) * 1000.0,
-              endMs: Double(endSamples) / Double(sampleRate) * 1000.0,
-              rms: rms
-          )
-
-          onWindow(window)
-
-      } catch {
-          print("❌ Failed to create SpeakerWindow: \(error)")
-      }
+  var sumSquares = 0.0
+  for sample in ring { let value = Double(sample); sumSquares += value * value }
+  let rms = (sumSquares / Double(ring.count)).squareRoot() / 32768.0
+  let data = ring.withUnsafeBufferPointer { Data(buffer: $0) }
+  let startSamples = endSamples - windowSamples
+  do {
+    let buffer = try ArrayBuffer.copy(data: data)
+    onWindow(SpeakerWindow(
+      buffer: buffer,
+      startMs: Double(startSamples) / Double(sampleRate) * 1000.0,
+      endMs: Double(endSamples) / Double(sampleRate) * 1000.0,
+      rms: rms
+    ))
+  } catch {
+    // Drop this window — next hop will emit again.
   }
+}
 }

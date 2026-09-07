@@ -4,7 +4,7 @@ import type { RecoveryMarker } from './types';
 
 /**
  * Marker store backed by JSON files under `<outputDirectory>/<sessionId>.recording.json`.
- * The default for `createRecordingService`. Works with `react-native-fs`, `expo-file-system` or any file API;
+ * The default for `createRecordingService`. Works with `react-native-blob-util`, `expo-file-system` or any file API;
  * you inject the four file ops so this package stays dependency-free.
  */
 export interface FileSystemBridge {

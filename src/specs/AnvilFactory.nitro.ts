@@ -1,12 +1,9 @@
 import type { HybridObject } from 'react-native-nitro-modules';
-
 import type { AnvilRecorder } from './AnvilRecorder.nitro';
-
 import type { RecorderConfig } from '../types/RecorderConfig';
-
 import type { PermissionStatus } from '../types/PermissionStatus';
-
 import type { OrphanedRecording } from '../types/OrphanedRecording';
+import type { RecordingSegment } from '../types/RecordingSegment';
 
 /**
  * Root object of react-native-nitro-audio-anvil. Exported from the package as `Anvil`.
@@ -34,4 +31,13 @@ export interface AnvilFactory extends HybridObject<{
    * clears their markers and resolves with them. Call once on app launch.
    */
   discoverOrphanedRecordings(directory: string): Promise<OrphanedRecording[]>;
+  /**
+   * Joins segment WAV files (same sample rate, in the order given) into one WAV at `outputPath`
+   * and resolves with its metadata. Use after `stop()` or after recovery whenever you need a single
+   * file for playback or upload. Streams from disk; no full-file memory use.
+   */
+  concatenate(
+    segmentPaths: string[],
+    outputPath: string
+  ): Promise<RecordingSegment>;
 }
