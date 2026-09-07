@@ -28,11 +28,11 @@
 #error NitroModules cannot be found! Are you sure you installed NitroModules properly?
 #endif
 
-// Forward declaration of `InterruptionReason` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class InterruptionReason; }
+// Forward declaration of `AnvilInterruptionReason` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilInterruptionReason; }
 
 #include <string>
-#include "InterruptionReason.hpp"
+#include "AnvilInterruptionReason.hpp"
 #include <optional>
 
 namespace margelo::nitro::audioanvil {
@@ -51,13 +51,13 @@ namespace margelo::nitro::audioanvil {
     double startedAt     SWIFT_PRIVATE;
     double endedAt     SWIFT_PRIVATE;
     bool wasInterrupted     SWIFT_PRIVATE;
-    std::optional<InterruptionReason> interruptionReason     SWIFT_PRIVATE;
+    std::optional<AnvilInterruptionReason> interruptionReason     SWIFT_PRIVATE;
     bool routeChanged     SWIFT_PRIVATE;
     std::string sha256     SWIFT_PRIVATE;
 
   public:
     RecordingSegment() = default;
-    explicit RecordingSegment(double index, std::string filePath, double sampleRate, double durationMs, double fileSize, double mediaStartMs, double startedAt, double endedAt, bool wasInterrupted, std::optional<InterruptionReason> interruptionReason, bool routeChanged, std::string sha256): index(index), filePath(filePath), sampleRate(sampleRate), durationMs(durationMs), fileSize(fileSize), mediaStartMs(mediaStartMs), startedAt(startedAt), endedAt(endedAt), wasInterrupted(wasInterrupted), interruptionReason(interruptionReason), routeChanged(routeChanged), sha256(sha256) {}
+    explicit RecordingSegment(double index, std::string filePath, double sampleRate, double durationMs, double fileSize, double mediaStartMs, double startedAt, double endedAt, bool wasInterrupted, std::optional<AnvilInterruptionReason> interruptionReason, bool routeChanged, std::string sha256): index(index), filePath(filePath), sampleRate(sampleRate), durationMs(durationMs), fileSize(fileSize), mediaStartMs(mediaStartMs), startedAt(startedAt), endedAt(endedAt), wasInterrupted(wasInterrupted), interruptionReason(interruptionReason), routeChanged(routeChanged), sha256(sha256) {}
 
   public:
     friend bool operator==(const RecordingSegment& lhs, const RecordingSegment& rhs) = default;
@@ -82,7 +82,7 @@ namespace margelo::nitro {
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "startedAt"))),
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "endedAt"))),
         JSIConverter<bool>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "wasInterrupted"))),
-        JSIConverter<std::optional<margelo::nitro::audioanvil::InterruptionReason>>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "interruptionReason"))),
+        JSIConverter<std::optional<margelo::nitro::audioanvil::AnvilInterruptionReason>>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "interruptionReason"))),
         JSIConverter<bool>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "routeChanged"))),
         JSIConverter<std::string>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "sha256")))
       );
@@ -98,7 +98,7 @@ namespace margelo::nitro {
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "startedAt"), JSIConverter<double>::toJSI(runtime, arg.startedAt));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "endedAt"), JSIConverter<double>::toJSI(runtime, arg.endedAt));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "wasInterrupted"), JSIConverter<bool>::toJSI(runtime, arg.wasInterrupted));
-      obj.setProperty(runtime, PropNameIDCache::get(runtime, "interruptionReason"), JSIConverter<std::optional<margelo::nitro::audioanvil::InterruptionReason>>::toJSI(runtime, arg.interruptionReason));
+      obj.setProperty(runtime, PropNameIDCache::get(runtime, "interruptionReason"), JSIConverter<std::optional<margelo::nitro::audioanvil::AnvilInterruptionReason>>::toJSI(runtime, arg.interruptionReason));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "routeChanged"), JSIConverter<bool>::toJSI(runtime, arg.routeChanged));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "sha256"), JSIConverter<std::string>::toJSI(runtime, arg.sha256));
       return obj;
@@ -120,7 +120,7 @@ namespace margelo::nitro {
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "startedAt")))) return false;
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "endedAt")))) return false;
       if (!JSIConverter<bool>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "wasInterrupted")))) return false;
-      if (!JSIConverter<std::optional<margelo::nitro::audioanvil::InterruptionReason>>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "interruptionReason")))) return false;
+      if (!JSIConverter<std::optional<margelo::nitro::audioanvil::AnvilInterruptionReason>>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "interruptionReason")))) return false;
       if (!JSIConverter<bool>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "routeChanged")))) return false;
       if (!JSIConverter<std::string>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "sha256")))) return false;
       return true;

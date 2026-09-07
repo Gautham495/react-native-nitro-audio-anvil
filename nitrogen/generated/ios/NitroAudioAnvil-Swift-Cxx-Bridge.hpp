@@ -8,28 +8,28 @@
 #pragma once
 
 // Forward declarations of C++ defined types
+// Forward declaration of `AnvilInterruptionEvent` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct AnvilInterruptionEvent; }
+// Forward declaration of `AnvilInterruptionPhase` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilInterruptionPhase; }
+// Forward declaration of `AnvilInterruptionReason` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilInterruptionReason; }
+// Forward declaration of `AnvilListenerSubscription` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct AnvilListenerSubscription; }
+// Forward declaration of `AnvilPermissionStatus` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilPermissionStatus; }
 // Forward declaration of `ArrayBufferHolder` to properly resolve imports.
 namespace NitroModules { class ArrayBufferHolder; }
 // Forward declaration of `HybridAnvilFactorySpec` to properly resolve imports.
 namespace margelo::nitro::audioanvil { class HybridAnvilFactorySpec; }
 // Forward declaration of `HybridAnvilRecorderSpec` to properly resolve imports.
 namespace margelo::nitro::audioanvil { class HybridAnvilRecorderSpec; }
-// Forward declaration of `InterruptionEvent` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct InterruptionEvent; }
-// Forward declaration of `InterruptionPhase` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class InterruptionPhase; }
-// Forward declaration of `InterruptionReason` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class InterruptionReason; }
-// Forward declaration of `ListenerSubscription` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct ListenerSubscription; }
 // Forward declaration of `NotificationConfig` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct NotificationConfig; }
 // Forward declaration of `OrphanedRecording` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct OrphanedRecording; }
 // Forward declaration of `PCMChunk` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct PCMChunk; }
-// Forward declaration of `PermissionStatus` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class PermissionStatus; }
 // Forward declaration of `RecorderErrorCode` to properly resolve imports.
 namespace margelo::nitro::audioanvil { enum class RecorderErrorCode; }
 // Forward declaration of `RecorderError` to properly resolve imports.
@@ -52,16 +52,16 @@ namespace NitroAudioAnvil { class HybridAnvilFactorySpec_cxx; }
 namespace NitroAudioAnvil { class HybridAnvilRecorderSpec_cxx; }
 
 // Include C++ defined types
+#include "AnvilInterruptionEvent.hpp"
+#include "AnvilInterruptionPhase.hpp"
+#include "AnvilInterruptionReason.hpp"
+#include "AnvilListenerSubscription.hpp"
+#include "AnvilPermissionStatus.hpp"
 #include "HybridAnvilFactorySpec.hpp"
 #include "HybridAnvilRecorderSpec.hpp"
-#include "InterruptionEvent.hpp"
-#include "InterruptionPhase.hpp"
-#include "InterruptionReason.hpp"
-#include "ListenerSubscription.hpp"
 #include "NotificationConfig.hpp"
 #include "OrphanedRecording.hpp"
 #include "PCMChunk.hpp"
-#include "PermissionStatus.hpp"
 #include "RecorderError.hpp"
 #include "RecorderErrorCode.hpp"
 #include "RecordingSegment.hpp"
@@ -170,52 +170,52 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     return optional.value();
   }
   
-  // pragma MARK: std::shared_ptr<Promise<PermissionStatus>>
+  // pragma MARK: std::shared_ptr<Promise<AnvilPermissionStatus>>
   /**
-   * Specialized version of `std::shared_ptr<Promise<PermissionStatus>>`.
+   * Specialized version of `std::shared_ptr<Promise<AnvilPermissionStatus>>`.
    */
-  using std__shared_ptr_Promise_PermissionStatus__ = std::shared_ptr<Promise<PermissionStatus>>;
-  inline std::shared_ptr<Promise<PermissionStatus>> create_std__shared_ptr_Promise_PermissionStatus__() noexcept {
-    return Promise<PermissionStatus>::create();
+  using std__shared_ptr_Promise_AnvilPermissionStatus__ = std::shared_ptr<Promise<AnvilPermissionStatus>>;
+  inline std::shared_ptr<Promise<AnvilPermissionStatus>> create_std__shared_ptr_Promise_AnvilPermissionStatus__() noexcept {
+    return Promise<AnvilPermissionStatus>::create();
   }
-  inline PromiseHolder<PermissionStatus> wrap_std__shared_ptr_Promise_PermissionStatus__(std::shared_ptr<Promise<PermissionStatus>> promise) noexcept {
-    return PromiseHolder<PermissionStatus>(std::move(promise));
+  inline PromiseHolder<AnvilPermissionStatus> wrap_std__shared_ptr_Promise_AnvilPermissionStatus__(std::shared_ptr<Promise<AnvilPermissionStatus>> promise) noexcept {
+    return PromiseHolder<AnvilPermissionStatus>(std::move(promise));
   }
   
-  // pragma MARK: std::function<void(PermissionStatus /* result */)>
+  // pragma MARK: std::function<void(AnvilPermissionStatus /* result */)>
   /**
-   * Specialized version of `std::function<void(PermissionStatus)>`.
+   * Specialized version of `std::function<void(AnvilPermissionStatus)>`.
    */
-  using Func_void_PermissionStatus = std::function<void(PermissionStatus /* result */)>;
+  using Func_void_AnvilPermissionStatus = std::function<void(AnvilPermissionStatus /* result */)>;
   /**
-   * Wrapper class for a `std::function<void(PermissionStatus / * result * /)>`, this can be used from Swift.
+   * Wrapper class for a `std::function<void(AnvilPermissionStatus / * result * /)>`, this can be used from Swift.
    */
-  class Func_void_PermissionStatus_Wrapper final {
+  class Func_void_AnvilPermissionStatus_Wrapper final {
   public:
-    explicit Func_void_PermissionStatus_Wrapper(std::function<void(PermissionStatus /* result */)>&& func): _function(std::make_unique<std::function<void(PermissionStatus /* result */)>>(std::move(func))) {}
+    explicit Func_void_AnvilPermissionStatus_Wrapper(std::function<void(AnvilPermissionStatus /* result */)>&& func): _function(std::make_unique<std::function<void(AnvilPermissionStatus /* result */)>>(std::move(func))) {}
     inline void call(int result) const noexcept {
-      _function->operator()(static_cast<PermissionStatus>(result));
+      _function->operator()(static_cast<AnvilPermissionStatus>(result));
     }
   private:
-    std::unique_ptr<std::function<void(PermissionStatus /* result */)>> _function;
+    std::unique_ptr<std::function<void(AnvilPermissionStatus /* result */)>> _function;
   } SWIFT_NONCOPYABLE;
-  Func_void_PermissionStatus create_Func_void_PermissionStatus(void* NON_NULL swiftClosureWrapper) noexcept;
-  inline Func_void_PermissionStatus_Wrapper wrap_Func_void_PermissionStatus(Func_void_PermissionStatus value) noexcept {
-    return Func_void_PermissionStatus_Wrapper(std::move(value));
+  Func_void_AnvilPermissionStatus create_Func_void_AnvilPermissionStatus(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_AnvilPermissionStatus_Wrapper wrap_Func_void_AnvilPermissionStatus(Func_void_AnvilPermissionStatus value) noexcept {
+    return Func_void_AnvilPermissionStatus_Wrapper(std::move(value));
   }
   
-  // pragma MARK: std::optional<InterruptionReason>
+  // pragma MARK: std::optional<AnvilInterruptionReason>
   /**
-   * Specialized version of `std::optional<InterruptionReason>`.
+   * Specialized version of `std::optional<AnvilInterruptionReason>`.
    */
-  using std__optional_InterruptionReason_ = std::optional<InterruptionReason>;
-  inline std::optional<InterruptionReason> create_std__optional_InterruptionReason_(const InterruptionReason& value) noexcept {
-    return std::optional<InterruptionReason>(value);
+  using std__optional_AnvilInterruptionReason_ = std::optional<AnvilInterruptionReason>;
+  inline std::optional<AnvilInterruptionReason> create_std__optional_AnvilInterruptionReason_(const AnvilInterruptionReason& value) noexcept {
+    return std::optional<AnvilInterruptionReason>(value);
   }
-  inline bool has_value_std__optional_InterruptionReason_(const std::optional<InterruptionReason>& optional) noexcept {
+  inline bool has_value_std__optional_AnvilInterruptionReason_(const std::optional<AnvilInterruptionReason>& optional) noexcept {
     return optional.has_value();
   }
-  inline InterruptionReason get_std__optional_InterruptionReason_(const std::optional<InterruptionReason>& optional) noexcept {
+  inline AnvilInterruptionReason get_std__optional_AnvilInterruptionReason_(const std::optional<AnvilInterruptionReason>& optional) noexcept {
     return optional.value();
   }
   
@@ -341,22 +341,22 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     return Result<std::shared_ptr<Promise<std::shared_ptr<HybridAnvilRecorderSpec>>>>::withError(error);
   }
   
-  // pragma MARK: Result<PermissionStatus>
-  using Result_PermissionStatus_ = Result<PermissionStatus>;
-  inline Result_PermissionStatus_ create_Result_PermissionStatus_(PermissionStatus value) noexcept {
-    return Result<PermissionStatus>::withValue(std::move(value));
+  // pragma MARK: Result<AnvilPermissionStatus>
+  using Result_AnvilPermissionStatus_ = Result<AnvilPermissionStatus>;
+  inline Result_AnvilPermissionStatus_ create_Result_AnvilPermissionStatus_(AnvilPermissionStatus value) noexcept {
+    return Result<AnvilPermissionStatus>::withValue(std::move(value));
   }
-  inline Result_PermissionStatus_ create_Result_PermissionStatus_(const std::exception_ptr& error) noexcept {
-    return Result<PermissionStatus>::withError(error);
+  inline Result_AnvilPermissionStatus_ create_Result_AnvilPermissionStatus_(const std::exception_ptr& error) noexcept {
+    return Result<AnvilPermissionStatus>::withError(error);
   }
   
-  // pragma MARK: Result<std::shared_ptr<Promise<PermissionStatus>>>
-  using Result_std__shared_ptr_Promise_PermissionStatus___ = Result<std::shared_ptr<Promise<PermissionStatus>>>;
-  inline Result_std__shared_ptr_Promise_PermissionStatus___ create_Result_std__shared_ptr_Promise_PermissionStatus___(const std::shared_ptr<Promise<PermissionStatus>>& value) noexcept {
-    return Result<std::shared_ptr<Promise<PermissionStatus>>>::withValue(value);
+  // pragma MARK: Result<std::shared_ptr<Promise<AnvilPermissionStatus>>>
+  using Result_std__shared_ptr_Promise_AnvilPermissionStatus___ = Result<std::shared_ptr<Promise<AnvilPermissionStatus>>>;
+  inline Result_std__shared_ptr_Promise_AnvilPermissionStatus___ create_Result_std__shared_ptr_Promise_AnvilPermissionStatus___(const std::shared_ptr<Promise<AnvilPermissionStatus>>& value) noexcept {
+    return Result<std::shared_ptr<Promise<AnvilPermissionStatus>>>::withValue(value);
   }
-  inline Result_std__shared_ptr_Promise_PermissionStatus___ create_Result_std__shared_ptr_Promise_PermissionStatus___(const std::exception_ptr& error) noexcept {
-    return Result<std::shared_ptr<Promise<PermissionStatus>>>::withError(error);
+  inline Result_std__shared_ptr_Promise_AnvilPermissionStatus___ create_Result_std__shared_ptr_Promise_AnvilPermissionStatus___(const std::exception_ptr& error) noexcept {
+    return Result<std::shared_ptr<Promise<AnvilPermissionStatus>>>::withError(error);
   }
   
   // pragma MARK: Result<std::shared_ptr<Promise<std::vector<OrphanedRecording>>>>
@@ -523,26 +523,26 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     return Func_void_SpeakerWindow_Wrapper(std::move(value));
   }
   
-  // pragma MARK: std::function<void(const InterruptionEvent& /* event */)>
+  // pragma MARK: std::function<void(const AnvilInterruptionEvent& /* event */)>
   /**
-   * Specialized version of `std::function<void(const InterruptionEvent&)>`.
+   * Specialized version of `std::function<void(const AnvilInterruptionEvent&)>`.
    */
-  using Func_void_InterruptionEvent = std::function<void(const InterruptionEvent& /* event */)>;
+  using Func_void_AnvilInterruptionEvent = std::function<void(const AnvilInterruptionEvent& /* event */)>;
   /**
-   * Wrapper class for a `std::function<void(const InterruptionEvent& / * event * /)>`, this can be used from Swift.
+   * Wrapper class for a `std::function<void(const AnvilInterruptionEvent& / * event * /)>`, this can be used from Swift.
    */
-  class Func_void_InterruptionEvent_Wrapper final {
+  class Func_void_AnvilInterruptionEvent_Wrapper final {
   public:
-    explicit Func_void_InterruptionEvent_Wrapper(std::function<void(const InterruptionEvent& /* event */)>&& func): _function(std::make_unique<std::function<void(const InterruptionEvent& /* event */)>>(std::move(func))) {}
-    inline void call(InterruptionEvent event) const noexcept {
+    explicit Func_void_AnvilInterruptionEvent_Wrapper(std::function<void(const AnvilInterruptionEvent& /* event */)>&& func): _function(std::make_unique<std::function<void(const AnvilInterruptionEvent& /* event */)>>(std::move(func))) {}
+    inline void call(AnvilInterruptionEvent event) const noexcept {
       _function->operator()(event);
     }
   private:
-    std::unique_ptr<std::function<void(const InterruptionEvent& /* event */)>> _function;
+    std::unique_ptr<std::function<void(const AnvilInterruptionEvent& /* event */)>> _function;
   } SWIFT_NONCOPYABLE;
-  Func_void_InterruptionEvent create_Func_void_InterruptionEvent(void* NON_NULL swiftClosureWrapper) noexcept;
-  inline Func_void_InterruptionEvent_Wrapper wrap_Func_void_InterruptionEvent(Func_void_InterruptionEvent value) noexcept {
-    return Func_void_InterruptionEvent_Wrapper(std::move(value));
+  Func_void_AnvilInterruptionEvent create_Func_void_AnvilInterruptionEvent(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_AnvilInterruptionEvent_Wrapper wrap_Func_void_AnvilInterruptionEvent(Func_void_AnvilInterruptionEvent value) noexcept {
+    return Func_void_AnvilInterruptionEvent_Wrapper(std::move(value));
   }
   
   // pragma MARK: std::function<void(const RouteChangeEvent& /* event */)>
@@ -638,13 +638,13 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     return Result<std::shared_ptr<Promise<std::string>>>::withError(error);
   }
   
-  // pragma MARK: Result<ListenerSubscription>
-  using Result_ListenerSubscription_ = Result<ListenerSubscription>;
-  inline Result_ListenerSubscription_ create_Result_ListenerSubscription_(const ListenerSubscription& value) noexcept {
-    return Result<ListenerSubscription>::withValue(value);
+  // pragma MARK: Result<AnvilListenerSubscription>
+  using Result_AnvilListenerSubscription_ = Result<AnvilListenerSubscription>;
+  inline Result_AnvilListenerSubscription_ create_Result_AnvilListenerSubscription_(const AnvilListenerSubscription& value) noexcept {
+    return Result<AnvilListenerSubscription>::withValue(value);
   }
-  inline Result_ListenerSubscription_ create_Result_ListenerSubscription_(const std::exception_ptr& error) noexcept {
-    return Result<ListenerSubscription>::withError(error);
+  inline Result_AnvilListenerSubscription_ create_Result_AnvilListenerSubscription_(const std::exception_ptr& error) noexcept {
+    return Result<AnvilListenerSubscription>::withError(error);
   }
 
 } // namespace margelo::nitro::audioanvil::bridge::swift

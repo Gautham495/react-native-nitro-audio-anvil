@@ -20,11 +20,11 @@ class HybridAnvilFactory : HybridAnvilFactorySpec() {
     }
   }
 
-  override fun getPermissionStatus(): PermissionStatus {
+  override fun getPermissionStatus(): AnvilPermissionStatus {
     return AnvilPermission.status(context, context.currentActivity)
   }
 
-  override fun requestPermission(): Promise<PermissionStatus> {
+  override fun requestPermission(): Promise<AnvilPermissionStatus> {
     return AnvilPermission.request(context, context.currentActivity)
   }
 

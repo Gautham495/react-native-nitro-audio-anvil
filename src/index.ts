@@ -4,8 +4,6 @@ export type { AnvilFactory } from './specs/AnvilFactory.nitro';
 
 export type { AnvilRecorder } from './specs/AnvilRecorder.nitro';
 
-export type { ListenerSubscription } from './types/ListenerSubscription';
-
 export type { RecorderConfig } from './types/RecorderConfig';
 
 export type { NotificationConfig } from './types/NotificationConfig';
@@ -21,17 +19,26 @@ export type { PCMChunk } from './types/PCMChunk';
 export type { SpeakerWindow } from './types/SpeakerWindow';
 
 export type {
-  InterruptionEvent,
-  InterruptionPhase,
-  InterruptionReason,
-} from './types/InterruptionEvent';
+  AnvilPermissionStatus,
+  AnvilPermissionStatus as AnvilPermissionStatus,
+} from './types/AnvilPermissionStatus';
+
+export type {
+  AnvilListenerSubscription,
+  AnvilListenerSubscription as AnvilListenerSubscription,
+} from './types/AnvilListenerSubscription';
+
+export type {
+  AnvilInterruptionReason,
+  AnvilInterruptionReason as AnvilInterruptionReason,
+  AnvilInterruptionPhase as InterruptionPhase,
+  AnvilInterruptionEvent as AnvilInterruptionEvent,
+} from './types/AnvilInterruptionEvent';
 
 export type {
   RouteChangeEvent,
   RouteChangeReason,
 } from './types/RouteChangeEvent';
-
-export type { PermissionStatus } from './types/PermissionStatus';
 
 export type { StorageWarningEvent } from './types/StorageWarningEvent';
 

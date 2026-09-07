@@ -10,25 +10,25 @@ import type { AnvilRecorder } from '../specs/AnvilRecorder.nitro';
  * - `focus`: another app took audio focus / capture was silenced (Android)
  * - `other`: any other system interruption (Siri, alarm, …)
  *
- * @see {@linkcode InterruptionEvent.reason}
+ * @see {@linkcode AnvilInterruptionEvent.reason}
  */
-export type InterruptionReason =
+export type AnvilInterruptionReason =
   'call' | 'muted' | 'route' | 'reset' | 'focus' | 'other';
 
 /**
  * Whether the interruption is starting or has finished.
  *
- * @see {@linkcode InterruptionEvent.phase}
+ * @see {@linkcode AnvilInterruptionEvent.phase}
  */
-export type InterruptionPhase = 'began' | 'ended';
+export type AnvilInterruptionPhase = 'began' | 'ended';
 
 /**
  * Emitted by {@linkcode AnvilRecorder.addInterruptionListener}.
  * On `began`, the segment recorded so far has already been finalized on disk.
  */
-export interface InterruptionEvent {
-  phase: InterruptionPhase;
-  reason: InterruptionReason;
+export interface AnvilInterruptionEvent {
+  phase: AnvilInterruptionPhase;
+  reason: AnvilInterruptionReason;
   /**
    * On `ended`: the OS hint that capture may resume. With policy `resume` the recorder
    * already resumed when this is `true`. With policy `hold`, or when this is `false`,

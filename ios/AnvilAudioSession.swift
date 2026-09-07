@@ -9,7 +9,7 @@ final class AnvilAudioSession {
   private var observers: [NSObjectProtocol] = []
   private var lastInputUID = ""
 
-  var onInterruptionBegan: ((InterruptionReason) -> Void)?
+  var onInterruptionBegan: ((AnvilInterruptionReason) -> Void)?
   var onInterruptionEnded: ((Bool) -> Void)?
   var onRouteChanged: ((RouteChangeReason, String, Bool) -> Void)?
   var onMediaServicesReset: (() -> Void)?
@@ -65,7 +65,7 @@ final class AnvilAudioSession {
     guard let type = notification.anvilInterruptionType else { return }
     switch type {
     case .began:
-      let reason = callObserver.hasActiveCall ? InterruptionReason.call : notification.anvilInterruptionReason
+      let reason = callObserver.hasActiveCall ? AnvilInterruptionReason.call : notification.anvilInterruptionReason
       queue.async { [weak self] in self?.onInterruptionBegan?(reason) }
     case .ended:
       let shouldResume = notification.anvilShouldResume

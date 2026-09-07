@@ -36,11 +36,11 @@ abstract class HybridAnvilFactorySpec: HybridObject() {
   
   @DoNotStrip
   @Keep
-  abstract fun getPermissionStatus(): PermissionStatus
+  abstract fun getPermissionStatus(): AnvilPermissionStatus
   
   @DoNotStrip
   @Keep
-  abstract fun requestPermission(): Promise<PermissionStatus>
+  abstract fun requestPermission(): Promise<AnvilPermissionStatus>
   
   @DoNotStrip
   @Keep

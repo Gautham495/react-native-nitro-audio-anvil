@@ -33,15 +33,15 @@ class HybridAnvilRecorder(private val config: RecorderConfig) : HybridAnvilRecor
   private val segments = ArrayList<RecordingSegment>()
   private var nextSegmentIndex = 0
   private var totalSamples = 0L
-  private var lastPermission = PermissionStatus.UNDETERMINED
-  private var lastInterruptionReason = InterruptionReason.OTHER
+  private var lastPermission = AnvilPermissionStatus.UNDETERMINED
+  private var lastInterruptionReason = AnvilInterruptionReason.OTHER
   private var serviceRunning = false
 
   private val pcmListeners = ListenerRegistry<PCMChunk>()
   private val speakerListeners = ListenerRegistry<SpeakerWindow>()
-  private val interruptionListeners = ListenerRegistry<InterruptionEvent>()
+  private val interruptionListeners = ListenerRegistry<AnvilInterruptionEvent>()
   private val routeListeners = ListenerRegistry<RouteChangeEvent>()
-  private val permissionListeners = ListenerRegistry<PermissionStatus>()
+  private val permissionListeners = ListenerRegistry<AnvilPermissionStatus>()
   private val storageListeners = ListenerRegistry<StorageWarningEvent>()
   private val segmentListeners = ListenerRegistry<RecordingSegment>()
   private val errorListeners = ListenerRegistry<RecorderError>()
@@ -86,25 +86,25 @@ class HybridAnvilRecorder(private val config: RecorderConfig) : HybridAnvilRecor
     return Promise.parallel { performExtract(startMs, endMs) }
   }
 
-  override fun addPCMListener(listener: (PCMChunk) -> Unit): ListenerSubscription = subscribe(pcmListeners, listener)
+  override fun addPCMListener(listener: (PCMChunk) -> Unit): AnvilListenerSubscription = subscribe(pcmListeners, listener)
 
-  override fun addSpeakerWindowListener(listener: (SpeakerWindow) -> Unit): ListenerSubscription = subscribe(speakerListeners, listener)
+  override fun addSpeakerWindowListener(listener: (SpeakerWindow) -> Unit): AnvilListenerSubscription = subscribe(speakerListeners, listener)
 
-  override fun addInterruptionListener(listener: (InterruptionEvent) -> Unit): ListenerSubscription = subscribe(interruptionListeners, listener)
+  override fun addInterruptionListener(listener: (AnvilInterruptionEvent) -> Unit): AnvilListenerSubscription = subscribe(interruptionListeners, listener)
 
-  override fun addRouteChangeListener(listener: (RouteChangeEvent) -> Unit): ListenerSubscription = subscribe(routeListeners, listener)
+  override fun addRouteChangeListener(listener: (RouteChangeEvent) -> Unit): AnvilListenerSubscription = subscribe(routeListeners, listener)
 
-  override fun addPermissionChangeListener(listener: (PermissionStatus) -> Unit): ListenerSubscription = subscribe(permissionListeners, listener)
+  override fun addPermissionChangeListener(listener: (AnvilPermissionStatus) -> Unit): AnvilListenerSubscription = subscribe(permissionListeners, listener)
 
-  override fun addStorageWarningListener(listener: (StorageWarningEvent) -> Unit): ListenerSubscription = subscribe(storageListeners, listener)
+  override fun addStorageWarningListener(listener: (StorageWarningEvent) -> Unit): AnvilListenerSubscription = subscribe(storageListeners, listener)
 
-  override fun addSegmentCompletedListener(listener: (RecordingSegment) -> Unit): ListenerSubscription = subscribe(segmentListeners, listener)
+  override fun addSegmentCompletedListener(listener: (RecordingSegment) -> Unit): AnvilListenerSubscription = subscribe(segmentListeners, listener)
 
-  override fun addErrorListener(listener: (RecorderError) -> Unit): ListenerSubscription = subscribe(errorListeners, listener)
+  override fun addErrorListener(listener: (RecorderError) -> Unit): AnvilListenerSubscription = subscribe(errorListeners, listener)
 
-  private fun <Event> subscribe(registry: ListenerRegistry<Event>, listener: (Event) -> Unit): ListenerSubscription {
+  private fun <Event> subscribe(registry: ListenerRegistry<Event>, listener: (Event) -> Unit): AnvilListenerSubscription {
     val id = registry.add(listener)
-    return ListenerSubscription(remove = { registry.remove(id) })
+    return AnvilListenerSubscription(remove = { registry.remove(id) })
   }
 
   // ---- Lifecycle (owner thread) ----------------------------------------------------------------
@@ -271,7 +271,7 @@ class HybridAnvilRecorder(private val config: RecorderConfig) : HybridAnvilRecor
 
   // ---- Focus events (owner thread) -------------------------------------------------------------
 
-  private fun handleInterruptionBegan(reason: InterruptionReason) {
+  private fun handleInterruptionBegan(reason: AnvilInterruptionReason) {
     if (stateValue != RecorderState.RECORDING) return
     stopCapture()
     writer?.wasInterrupted = true
@@ -285,8 +285,8 @@ class HybridAnvilRecorder(private val config: RecorderConfig) : HybridAnvilRecor
     }
     stateValue = RecorderState.INTERRUPTED
     interruptionListeners.emit(
-      InterruptionEvent(
-        phase = InterruptionPhase.BEGAN,
+      AnvilInterruptionEvent(
+        phase = AnvilInterruptionPhase.BEGAN,
         reason = reason,
         shouldResume = false,
         segmentPath = path,
@@ -298,8 +298,8 @@ class HybridAnvilRecorder(private val config: RecorderConfig) : HybridAnvilRecor
   private fun handleInterruptionEnded(shouldResume: Boolean) {
     if (stateValue != RecorderState.INTERRUPTED) return
     interruptionListeners.emit(
-      InterruptionEvent(
-        phase = InterruptionPhase.ENDED,
+      AnvilInterruptionEvent(
+        phase = AnvilInterruptionPhase.ENDED,
         reason = lastInterruptionReason,
         shouldResume = shouldResume,
         segmentPath = "",
@@ -346,7 +346,7 @@ class HybridAnvilRecorder(private val config: RecorderConfig) : HybridAnvilRecor
       lastPermission = status
       permissionListeners.emit(status)
     }
-    if (status != PermissionStatus.GRANTED) {
+    if (status != AnvilPermissionStatus.GRANTED) {
       throw AnvilException(RecorderErrorCode.PERMISSION, "Microphone permission is $status")
     }
   }

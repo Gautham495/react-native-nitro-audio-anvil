@@ -9,14 +9,14 @@
 
 // Forward declaration of `HybridAnvilRecorderSpec` to properly resolve imports.
 namespace margelo::nitro::audioanvil { class HybridAnvilRecorderSpec; }
-// Forward declaration of `PermissionStatus` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class PermissionStatus; }
+// Forward declaration of `AnvilPermissionStatus` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilPermissionStatus; }
 // Forward declaration of `OrphanedRecording` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct OrphanedRecording; }
 // Forward declaration of `RecordingSegment` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecordingSegment; }
-// Forward declaration of `InterruptionReason` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class InterruptionReason; }
+// Forward declaration of `AnvilInterruptionReason` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilInterruptionReason; }
 // Forward declaration of `RecorderConfig` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecorderConfig; }
 // Forward declaration of `InterruptionPolicy` to properly resolve imports.
@@ -29,17 +29,17 @@ namespace margelo::nitro::audioanvil { struct NotificationConfig; }
 #include <NitroModules/Promise.hpp>
 #include <NitroModules/JPromise.hpp>
 #include "JHybridAnvilRecorderSpec.hpp"
-#include "PermissionStatus.hpp"
-#include "JPermissionStatus.hpp"
+#include "AnvilPermissionStatus.hpp"
+#include "JAnvilPermissionStatus.hpp"
 #include "OrphanedRecording.hpp"
 #include <vector>
 #include "JOrphanedRecording.hpp"
 #include <string>
 #include "RecordingSegment.hpp"
 #include "JRecordingSegment.hpp"
-#include "InterruptionReason.hpp"
+#include "AnvilInterruptionReason.hpp"
 #include <optional>
-#include "JInterruptionReason.hpp"
+#include "JAnvilInterruptionReason.hpp"
 #include "RecorderConfig.hpp"
 #include "JRecorderConfig.hpp"
 #include "InterruptionPolicy.hpp"
@@ -96,18 +96,18 @@ namespace margelo::nitro::audioanvil {
       return __promise;
     }();
   }
-  PermissionStatus JHybridAnvilFactorySpec::getPermissionStatus() {
-    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPermissionStatus>()>("getPermissionStatus");
+  AnvilPermissionStatus JHybridAnvilFactorySpec::getPermissionStatus() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JAnvilPermissionStatus>()>("getPermissionStatus");
     auto __result = method(_javaPart);
     return __result->toCpp();
   }
-  std::shared_ptr<Promise<PermissionStatus>> JHybridAnvilFactorySpec::requestPermission() {
+  std::shared_ptr<Promise<AnvilPermissionStatus>> JHybridAnvilFactorySpec::requestPermission() {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>()>("requestPermission");
     auto __result = method(_javaPart);
     return [&]() {
-      auto __promise = Promise<PermissionStatus>::create();
+      auto __promise = Promise<AnvilPermissionStatus>::create();
       __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
-        auto __result = jni::static_ref_cast<JPermissionStatus>(__boxedResult);
+        auto __result = jni::static_ref_cast<JAnvilPermissionStatus>(__boxedResult);
         __promise->resolve(__result->toCpp());
       });
       __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {

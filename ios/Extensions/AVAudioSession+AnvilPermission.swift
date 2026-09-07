@@ -2,7 +2,7 @@ import AVFoundation
 
 extension AVAudioSession {
   /// Current microphone permission mapped to the Nitro enum.
-  var anvilPermissionStatus: PermissionStatus {
+  var anvilPermissionStatus: AnvilPermissionStatus {
     if #available(iOS 17.0, *) {
       switch AVAudioApplication.shared.recordPermission {
       case .granted: return .granted
@@ -18,7 +18,7 @@ extension AVAudioSession {
   }
 
   /// Prompts if undetermined and returns the resulting status.
-  static func anvilRequestPermission() async -> PermissionStatus {
+  static func anvilRequestPermission() async -> AnvilPermissionStatus {
     if #available(iOS 17.0, *) {
       let granted = await AVAudioApplication.requestRecordPermission()
       return granted ? .granted : .denied

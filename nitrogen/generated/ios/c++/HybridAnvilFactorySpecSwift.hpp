@@ -20,14 +20,14 @@ namespace margelo::nitro::audioanvil { struct RecorderConfig; }
 namespace margelo::nitro::audioanvil { enum class InterruptionPolicy; }
 // Forward declaration of `NotificationConfig` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct NotificationConfig; }
-// Forward declaration of `PermissionStatus` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class PermissionStatus; }
+// Forward declaration of `AnvilPermissionStatus` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilPermissionStatus; }
 // Forward declaration of `OrphanedRecording` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct OrphanedRecording; }
 // Forward declaration of `RecordingSegment` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecordingSegment; }
-// Forward declaration of `InterruptionReason` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class InterruptionReason; }
+// Forward declaration of `AnvilInterruptionReason` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilInterruptionReason; }
 
 #include <memory>
 #include "HybridAnvilRecorderSpec.hpp"
@@ -37,11 +37,11 @@ namespace margelo::nitro::audioanvil { enum class InterruptionReason; }
 #include "InterruptionPolicy.hpp"
 #include "NotificationConfig.hpp"
 #include <optional>
-#include "PermissionStatus.hpp"
+#include "AnvilPermissionStatus.hpp"
 #include "OrphanedRecording.hpp"
 #include <vector>
 #include "RecordingSegment.hpp"
-#include "InterruptionReason.hpp"
+#include "AnvilInterruptionReason.hpp"
 
 #include "NitroAudioAnvil-Swift-Cxx-Umbrella.hpp"
 
@@ -101,7 +101,7 @@ namespace margelo::nitro::audioanvil {
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline PermissionStatus getPermissionStatus() override {
+    inline AnvilPermissionStatus getPermissionStatus() override {
       auto __result = _swiftPart.getPermissionStatus();
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
@@ -109,7 +109,7 @@ namespace margelo::nitro::audioanvil {
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline std::shared_ptr<Promise<PermissionStatus>> requestPermission() override {
+    inline std::shared_ptr<Promise<AnvilPermissionStatus>> requestPermission() override {
       auto __result = _swiftPart.requestPermission();
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());

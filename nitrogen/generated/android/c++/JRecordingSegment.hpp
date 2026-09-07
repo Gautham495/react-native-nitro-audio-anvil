@@ -10,8 +10,8 @@
 #include <fbjni/fbjni.h>
 #include "RecordingSegment.hpp"
 
-#include "InterruptionReason.hpp"
-#include "JInterruptionReason.hpp"
+#include "AnvilInterruptionReason.hpp"
+#include "JAnvilInterruptionReason.hpp"
 #include <optional>
 #include <string>
 
@@ -52,8 +52,8 @@ namespace margelo::nitro::audioanvil {
       double endedAt = this->getFieldValue(fieldEndedAt);
       static const auto fieldWasInterrupted = clazz->getField<jboolean>("wasInterrupted");
       jboolean wasInterrupted = this->getFieldValue(fieldWasInterrupted);
-      static const auto fieldInterruptionReason = clazz->getField<JInterruptionReason>("interruptionReason");
-      jni::local_ref<JInterruptionReason> interruptionReason = this->getFieldValue(fieldInterruptionReason);
+      static const auto fieldInterruptionReason = clazz->getField<JAnvilInterruptionReason>("interruptionReason");
+      jni::local_ref<JAnvilInterruptionReason> interruptionReason = this->getFieldValue(fieldInterruptionReason);
       static const auto fieldRouteChanged = clazz->getField<jboolean>("routeChanged");
       jboolean routeChanged = this->getFieldValue(fieldRouteChanged);
       static const auto fieldSha256 = clazz->getField<jni::JString>("sha256");
@@ -80,7 +80,7 @@ namespace margelo::nitro::audioanvil {
      */
     [[maybe_unused]]
     static jni::local_ref<JRecordingSegment::javaobject> fromCpp(const RecordingSegment& value) {
-      using JSignature = JRecordingSegment(double, jni::alias_ref<jni::JString>, double, double, double, double, double, double, jboolean, jni::alias_ref<JInterruptionReason>, jboolean, jni::alias_ref<jni::JString>);
+      using JSignature = JRecordingSegment(double, jni::alias_ref<jni::JString>, double, double, double, double, double, double, jboolean, jni::alias_ref<JAnvilInterruptionReason>, jboolean, jni::alias_ref<jni::JString>);
       static const auto clazz = javaClassStatic();
       static const auto create = clazz->getStaticMethod<JSignature>("fromCpp");
       return create(
@@ -94,7 +94,7 @@ namespace margelo::nitro::audioanvil {
         value.startedAt,
         value.endedAt,
         value.wasInterrupted,
-        value.interruptionReason.has_value() ? JInterruptionReason::fromCpp(value.interruptionReason.value()) : nullptr,
+        value.interruptionReason.has_value() ? JAnvilInterruptionReason::fromCpp(value.interruptionReason.value()) : nullptr,
         value.routeChanged,
         jni::make_jstring(value.sha256)
       );

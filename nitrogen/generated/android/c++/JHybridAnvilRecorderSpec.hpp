@@ -63,14 +63,14 @@ namespace margelo::nitro::audioanvil {
     std::shared_ptr<Promise<std::vector<RecordingSegment>>> stop() override;
     std::shared_ptr<Promise<RecordingSegment>> rotateSegment() override;
     std::shared_ptr<Promise<std::string>> extractRange(double startMs, double endMs) override;
-    ListenerSubscription addPCMListener(const std::function<void(const PCMChunk& /* chunk */)>& listener) override;
-    ListenerSubscription addSpeakerWindowListener(const std::function<void(const SpeakerWindow& /* window */)>& listener) override;
-    ListenerSubscription addInterruptionListener(const std::function<void(const InterruptionEvent& /* event */)>& listener) override;
-    ListenerSubscription addRouteChangeListener(const std::function<void(const RouteChangeEvent& /* event */)>& listener) override;
-    ListenerSubscription addPermissionChangeListener(const std::function<void(PermissionStatus /* status */)>& listener) override;
-    ListenerSubscription addStorageWarningListener(const std::function<void(const StorageWarningEvent& /* event */)>& listener) override;
-    ListenerSubscription addSegmentCompletedListener(const std::function<void(const RecordingSegment& /* segment */)>& listener) override;
-    ListenerSubscription addErrorListener(const std::function<void(const RecorderError& /* error */)>& listener) override;
+    AnvilListenerSubscription addPCMListener(const std::function<void(const PCMChunk& /* chunk */)>& listener) override;
+    AnvilListenerSubscription addSpeakerWindowListener(const std::function<void(const SpeakerWindow& /* window */)>& listener) override;
+    AnvilListenerSubscription addInterruptionListener(const std::function<void(const AnvilInterruptionEvent& /* event */)>& listener) override;
+    AnvilListenerSubscription addRouteChangeListener(const std::function<void(const RouteChangeEvent& /* event */)>& listener) override;
+    AnvilListenerSubscription addPermissionChangeListener(const std::function<void(AnvilPermissionStatus /* status */)>& listener) override;
+    AnvilListenerSubscription addStorageWarningListener(const std::function<void(const StorageWarningEvent& /* event */)>& listener) override;
+    AnvilListenerSubscription addSegmentCompletedListener(const std::function<void(const RecordingSegment& /* segment */)>& listener) override;
+    AnvilListenerSubscription addErrorListener(const std::function<void(const RecorderError& /* error */)>& listener) override;
 
   private:
     jni::global_ref<JHybridAnvilRecorderSpec::JavaPart> _javaPart;

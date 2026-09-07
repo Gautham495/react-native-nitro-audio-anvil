@@ -1,7 +1,7 @@
 import type { HybridObject } from 'react-native-nitro-modules';
 import type { AnvilRecorder } from './AnvilRecorder.nitro';
 import type { RecorderConfig } from '../types/RecorderConfig';
-import type { PermissionStatus } from '../types/PermissionStatus';
+import type { AnvilPermissionStatus } from '../types/AnvilPermissionStatus';
 import type { OrphanedRecording } from '../types/OrphanedRecording';
 import type { RecordingSegment } from '../types/RecordingSegment';
 
@@ -21,11 +21,11 @@ export interface AnvilFactory extends HybridObject<{
   /**
    * Current microphone permission without prompting.
    */
-  getPermissionStatus(): PermissionStatus;
+  getPermissionStatus(): AnvilPermissionStatus;
   /**
    * Prompts for microphone permission if undetermined and resolves with the result.
    */
-  requestPermission(): Promise<PermissionStatus>;
+  requestPermission(): Promise<AnvilPermissionStatus>;
   /**
    * Finds sessions in `directory` that never reached `stop()`, repairs their WAV headers,
    * clears their markers and resolves with them. Call once on app launch.

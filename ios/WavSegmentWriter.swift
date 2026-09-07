@@ -9,7 +9,7 @@ final class WavSegmentWriter {
   let mediaStartMs: Double
   let startedAt: Double
   var wasInterrupted = false
-  var interruptionReason: InterruptionReason?
+  var interruptionReason: AnvilInterruptionReason?
   var routeChanged = false
 
   private let handle: FileHandle

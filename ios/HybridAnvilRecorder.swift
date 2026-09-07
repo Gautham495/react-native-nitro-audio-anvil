@@ -15,14 +15,14 @@ final class HybridAnvilRecorder: HybridAnvilRecorderSpec {
   private var segments: [RecordingSegment] = []
   private var nextSegmentIndex = 0
   private var totalSamples = 0
-  private var lastPermission: PermissionStatus
-  private var lastInterruptionReason: InterruptionReason = .other
+  private var lastPermission: AnvilPermissionStatus
+  private var lastInterruptionReason: AnvilInterruptionReason = .other
 
   private let pcmListeners = ListenerRegistry<PCMChunk>()
   private let speakerListeners = ListenerRegistry<SpeakerWindow>()
-  private let interruptionListeners = ListenerRegistry<InterruptionEvent>()
+  private let interruptionListeners = ListenerRegistry<AnvilInterruptionEvent>()
   private let routeListeners = ListenerRegistry<RouteChangeEvent>()
-  private let permissionListeners = ListenerRegistry<PermissionStatus>()
+  private let permissionListeners = ListenerRegistry<AnvilPermissionStatus>()
   private let storageListeners = ListenerRegistry<StorageWarningEvent>()
   private let segmentListeners = ListenerRegistry<RecordingSegment>()
   private let errorListeners = ListenerRegistry<RecorderError>()
@@ -86,43 +86,43 @@ final class HybridAnvilRecorder: HybridAnvilRecorderSpec {
     return Promise.parallel(queue) { try self.performExtract(startMs: startMs, endMs: endMs) }
   }
 
-  func addPCMListener(listener: @escaping (PCMChunk) -> Void) throws -> ListenerSubscription {
+  func addPCMListener(listener: @escaping (PCMChunk) -> Void) throws -> AnvilListenerSubscription {
     return subscribe(pcmListeners, listener)
   }
 
-  func addSpeakerWindowListener(listener: @escaping (SpeakerWindow) -> Void) throws -> ListenerSubscription {
+  func addSpeakerWindowListener(listener: @escaping (SpeakerWindow) -> Void) throws -> AnvilListenerSubscription {
     return subscribe(speakerListeners, listener)
   }
 
-  func addInterruptionListener(listener: @escaping (InterruptionEvent) -> Void) throws -> ListenerSubscription {
+  func addInterruptionListener(listener: @escaping (AnvilInterruptionEvent) -> Void) throws -> AnvilListenerSubscription {
     return subscribe(interruptionListeners, listener)
   }
 
-  func addRouteChangeListener(listener: @escaping (RouteChangeEvent) -> Void) throws -> ListenerSubscription {
+  func addRouteChangeListener(listener: @escaping (RouteChangeEvent) -> Void) throws -> AnvilListenerSubscription {
     return subscribe(routeListeners, listener)
   }
 
-  func addPermissionChangeListener(listener: @escaping (PermissionStatus) -> Void) throws -> ListenerSubscription {
+  func addPermissionChangeListener(listener: @escaping (AnvilPermissionStatus) -> Void) throws -> AnvilListenerSubscription {
     return subscribe(permissionListeners, listener)
   }
 
-  func addStorageWarningListener(listener: @escaping (StorageWarningEvent) -> Void) throws -> ListenerSubscription {
+  func addStorageWarningListener(listener: @escaping (StorageWarningEvent) -> Void) throws -> AnvilListenerSubscription {
     return subscribe(storageListeners, listener)
   }
 
-  func addSegmentCompletedListener(listener: @escaping (RecordingSegment) -> Void) throws -> ListenerSubscription {
+  func addSegmentCompletedListener(listener: @escaping (RecordingSegment) -> Void) throws -> AnvilListenerSubscription {
     return subscribe(segmentListeners, listener)
   }
 
-  func addErrorListener(listener: @escaping (RecorderError) -> Void) throws -> ListenerSubscription {
+  func addErrorListener(listener: @escaping (RecorderError) -> Void) throws -> AnvilListenerSubscription {
     return subscribe(errorListeners, listener)
   }
 
-  private func subscribe<Event>(_ registry: ListenerRegistry<Event>, _ listener: @escaping (Event) -> Void) -> ListenerSubscription {
+  private func subscribe<Event>(_ registry: ListenerRegistry<Event>, _ listener: @escaping (Event) -> Void) -> AnvilListenerSubscription {
     let id = UUID()
     let queue = self.queue
     queue.async { registry.add(id, listener) }
-    return ListenerSubscription(remove: {
+    return AnvilListenerSubscription(remove: {
       queue.async { registry.remove(id) }
     })
   }
@@ -277,7 +277,7 @@ final class HybridAnvilRecorder: HybridAnvilRecorderSpec {
 
   // MARK: - Session events (owner queue)
 
-  private func handleInterruptionBegan(_ reason: InterruptionReason) {
+  private func handleInterruptionBegan(_ reason: AnvilInterruptionReason) {
     guard state == .recording else { return }
     engine?.stop()
     writer?.wasInterrupted = true
@@ -290,14 +290,14 @@ final class HybridAnvilRecorder: HybridAnvilRecorderSpec {
       emitError(.io, "Finalizing on interruption failed: \(error.localizedDescription)")
     }
     state = .interrupted
-    interruptionListeners.emit(InterruptionEvent(
+    interruptionListeners.emit(AnvilInterruptionEvent(
       phase: .began, reason: reason, shouldResume: false, segmentPath: path, timestampMs: totalDurationMs
     ))
   }
 
   private func handleInterruptionEnded(_ shouldResume: Bool) {
     guard state == .interrupted else { return }
-    interruptionListeners.emit(InterruptionEvent(
+    interruptionListeners.emit(AnvilInterruptionEvent(
       phase: .ended, reason: lastInterruptionReason, shouldResume: shouldResume, segmentPath: "", timestampMs: totalDurationMs
     ))
     guard config.onInterruption == .resume, shouldResume else { return }
@@ -335,8 +335,8 @@ final class HybridAnvilRecorder: HybridAnvilRecorderSpec {
       emitError(.io, "Finalizing on media services reset failed: \(error.localizedDescription)")
     }
     state = .interrupted
-    interruptionListeners.emit(InterruptionEvent(phase: .began, reason: .reset, shouldResume: false, segmentPath: path, timestampMs: totalDurationMs))
-    interruptionListeners.emit(InterruptionEvent(phase: .ended, reason: .reset, shouldResume: true, segmentPath: "", timestampMs: totalDurationMs))
+    interruptionListeners.emit(AnvilInterruptionEvent(phase: .began, reason: .reset, shouldResume: false, segmentPath: path, timestampMs: totalDurationMs))
+    interruptionListeners.emit(AnvilInterruptionEvent(phase: .ended, reason: .reset, shouldResume: true, segmentPath: "", timestampMs: totalDurationMs))
     guard config.onInterruption == .resume else { return }
     do {
       try performResume()

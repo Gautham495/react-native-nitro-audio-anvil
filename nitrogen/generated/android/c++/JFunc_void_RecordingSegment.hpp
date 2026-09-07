@@ -15,9 +15,9 @@
 #include <NitroModules/JNICallable.hpp>
 #include "JRecordingSegment.hpp"
 #include <string>
-#include "InterruptionReason.hpp"
+#include "AnvilInterruptionReason.hpp"
 #include <optional>
-#include "JInterruptionReason.hpp"
+#include "JAnvilInterruptionReason.hpp"
 
 namespace margelo::nitro::audioanvil {
 

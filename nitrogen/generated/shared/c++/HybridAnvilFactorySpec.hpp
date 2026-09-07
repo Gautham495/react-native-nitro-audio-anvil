@@ -17,8 +17,8 @@
 namespace margelo::nitro::audioanvil { class HybridAnvilRecorderSpec; }
 // Forward declaration of `RecorderConfig` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecorderConfig; }
-// Forward declaration of `PermissionStatus` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class PermissionStatus; }
+// Forward declaration of `AnvilPermissionStatus` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilPermissionStatus; }
 // Forward declaration of `OrphanedRecording` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct OrphanedRecording; }
 // Forward declaration of `RecordingSegment` to properly resolve imports.
@@ -28,7 +28,7 @@ namespace margelo::nitro::audioanvil { struct RecordingSegment; }
 #include "HybridAnvilRecorderSpec.hpp"
 #include <NitroModules/Promise.hpp>
 #include "RecorderConfig.hpp"
-#include "PermissionStatus.hpp"
+#include "AnvilPermissionStatus.hpp"
 #include "OrphanedRecording.hpp"
 #include <vector>
 #include <string>
@@ -66,8 +66,8 @@ namespace margelo::nitro::audioanvil {
     public:
       // Methods
       virtual std::shared_ptr<Promise<std::shared_ptr<HybridAnvilRecorderSpec>>> createRecorder(const RecorderConfig& config) = 0;
-      virtual PermissionStatus getPermissionStatus() = 0;
-      virtual std::shared_ptr<Promise<PermissionStatus>> requestPermission() = 0;
+      virtual AnvilPermissionStatus getPermissionStatus() = 0;
+      virtual std::shared_ptr<Promise<AnvilPermissionStatus>> requestPermission() = 0;
       virtual std::shared_ptr<Promise<std::vector<OrphanedRecording>>> discoverOrphanedRecordings(const std::string& directory) = 0;
       virtual std::shared_ptr<Promise<RecordingSegment>> concatenate(const std::vector<std::string>& segmentPaths, const std::string& outputPath) = 0;
 

@@ -10,8 +10,8 @@
 #include <fbjni/fbjni.h>
 #include "OrphanedRecording.hpp"
 
-#include "InterruptionReason.hpp"
-#include "JInterruptionReason.hpp"
+#include "AnvilInterruptionReason.hpp"
+#include "JAnvilInterruptionReason.hpp"
 #include "JRecordingSegment.hpp"
 #include "RecordingSegment.hpp"
 #include <optional>

@@ -47,10 +47,10 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     };
   }
   
-  // pragma MARK: std::function<void(PermissionStatus /* result */)>
-  Func_void_PermissionStatus create_Func_void_PermissionStatus(void* NON_NULL swiftClosureWrapper) noexcept {
-    auto swiftClosure = NitroAudioAnvil::Func_void_PermissionStatus::fromUnsafe(swiftClosureWrapper);
-    return [swiftClosure = std::move(swiftClosure)](PermissionStatus result) mutable -> void {
+  // pragma MARK: std::function<void(AnvilPermissionStatus /* result */)>
+  Func_void_AnvilPermissionStatus create_Func_void_AnvilPermissionStatus(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = NitroAudioAnvil::Func_void_AnvilPermissionStatus::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](AnvilPermissionStatus result) mutable -> void {
       swiftClosure.call(static_cast<int>(result));
     };
   }
@@ -127,10 +127,10 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     };
   }
   
-  // pragma MARK: std::function<void(const InterruptionEvent& /* event */)>
-  Func_void_InterruptionEvent create_Func_void_InterruptionEvent(void* NON_NULL swiftClosureWrapper) noexcept {
-    auto swiftClosure = NitroAudioAnvil::Func_void_InterruptionEvent::fromUnsafe(swiftClosureWrapper);
-    return [swiftClosure = std::move(swiftClosure)](const InterruptionEvent& event) mutable -> void {
+  // pragma MARK: std::function<void(const AnvilInterruptionEvent& /* event */)>
+  Func_void_AnvilInterruptionEvent create_Func_void_AnvilInterruptionEvent(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = NitroAudioAnvil::Func_void_AnvilInterruptionEvent::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const AnvilInterruptionEvent& event) mutable -> void {
       swiftClosure.call(event);
     };
   }

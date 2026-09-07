@@ -55,8 +55,8 @@ namespace margelo::nitro::audioanvil {
   public:
     // Methods
     std::shared_ptr<Promise<std::shared_ptr<HybridAnvilRecorderSpec>>> createRecorder(const RecorderConfig& config) override;
-    PermissionStatus getPermissionStatus() override;
-    std::shared_ptr<Promise<PermissionStatus>> requestPermission() override;
+    AnvilPermissionStatus getPermissionStatus() override;
+    std::shared_ptr<Promise<AnvilPermissionStatus>> requestPermission() override;
     std::shared_ptr<Promise<std::vector<OrphanedRecording>>> discoverOrphanedRecordings(const std::string& directory) override;
     std::shared_ptr<Promise<RecordingSegment>> concatenate(const std::vector<std::string>& segmentPaths, const std::string& outputPath) override;
 

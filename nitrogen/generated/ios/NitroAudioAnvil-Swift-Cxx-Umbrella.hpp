@@ -8,28 +8,28 @@
 #pragma once
 
 // Forward declarations of C++ defined types
+// Forward declaration of `AnvilInterruptionEvent` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct AnvilInterruptionEvent; }
+// Forward declaration of `AnvilInterruptionPhase` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilInterruptionPhase; }
+// Forward declaration of `AnvilInterruptionReason` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilInterruptionReason; }
+// Forward declaration of `AnvilListenerSubscription` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct AnvilListenerSubscription; }
+// Forward declaration of `AnvilPermissionStatus` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilPermissionStatus; }
 // Forward declaration of `HybridAnvilFactorySpec` to properly resolve imports.
 namespace margelo::nitro::audioanvil { class HybridAnvilFactorySpec; }
 // Forward declaration of `HybridAnvilRecorderSpec` to properly resolve imports.
 namespace margelo::nitro::audioanvil { class HybridAnvilRecorderSpec; }
-// Forward declaration of `InterruptionEvent` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct InterruptionEvent; }
-// Forward declaration of `InterruptionPhase` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class InterruptionPhase; }
 // Forward declaration of `InterruptionPolicy` to properly resolve imports.
 namespace margelo::nitro::audioanvil { enum class InterruptionPolicy; }
-// Forward declaration of `InterruptionReason` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class InterruptionReason; }
-// Forward declaration of `ListenerSubscription` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct ListenerSubscription; }
 // Forward declaration of `NotificationConfig` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct NotificationConfig; }
 // Forward declaration of `OrphanedRecording` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct OrphanedRecording; }
 // Forward declaration of `PCMChunk` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct PCMChunk; }
-// Forward declaration of `PermissionStatus` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class PermissionStatus; }
 // Forward declaration of `RecorderConfig` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecorderConfig; }
 // Forward declaration of `RecorderErrorCode` to properly resolve imports.
@@ -50,17 +50,17 @@ namespace margelo::nitro::audioanvil { struct SpeakerWindow; }
 namespace margelo::nitro::audioanvil { struct StorageWarningEvent; }
 
 // Include C++ defined types
+#include "AnvilInterruptionEvent.hpp"
+#include "AnvilInterruptionPhase.hpp"
+#include "AnvilInterruptionReason.hpp"
+#include "AnvilListenerSubscription.hpp"
+#include "AnvilPermissionStatus.hpp"
 #include "HybridAnvilFactorySpec.hpp"
 #include "HybridAnvilRecorderSpec.hpp"
-#include "InterruptionEvent.hpp"
-#include "InterruptionPhase.hpp"
 #include "InterruptionPolicy.hpp"
-#include "InterruptionReason.hpp"
-#include "ListenerSubscription.hpp"
 #include "NotificationConfig.hpp"
 #include "OrphanedRecording.hpp"
 #include "PCMChunk.hpp"
-#include "PermissionStatus.hpp"
 #include "RecorderConfig.hpp"
 #include "RecorderError.hpp"
 #include "RecorderErrorCode.hpp"

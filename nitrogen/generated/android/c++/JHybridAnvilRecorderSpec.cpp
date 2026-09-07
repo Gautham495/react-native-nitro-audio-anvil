@@ -11,24 +11,24 @@
 namespace margelo::nitro::audioanvil { enum class RecorderState; }
 // Forward declaration of `RecordingSegment` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecordingSegment; }
-// Forward declaration of `InterruptionReason` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class InterruptionReason; }
-// Forward declaration of `ListenerSubscription` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct ListenerSubscription; }
+// Forward declaration of `AnvilInterruptionReason` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilInterruptionReason; }
+// Forward declaration of `AnvilListenerSubscription` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct AnvilListenerSubscription; }
 // Forward declaration of `PCMChunk` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct PCMChunk; }
 // Forward declaration of `SpeakerWindow` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct SpeakerWindow; }
-// Forward declaration of `InterruptionEvent` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct InterruptionEvent; }
-// Forward declaration of `InterruptionPhase` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class InterruptionPhase; }
+// Forward declaration of `AnvilInterruptionEvent` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct AnvilInterruptionEvent; }
+// Forward declaration of `AnvilInterruptionPhase` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilInterruptionPhase; }
 // Forward declaration of `RouteChangeEvent` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RouteChangeEvent; }
 // Forward declaration of `RouteChangeReason` to properly resolve imports.
 namespace margelo::nitro::audioanvil { enum class RouteChangeReason; }
-// Forward declaration of `PermissionStatus` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class PermissionStatus; }
+// Forward declaration of `AnvilPermissionStatus` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilPermissionStatus; }
 // Forward declaration of `StorageWarningEvent` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct StorageWarningEvent; }
 // Forward declaration of `RecorderError` to properly resolve imports.
@@ -45,11 +45,11 @@ namespace margelo::nitro::audioanvil { enum class RecorderErrorCode; }
 #include "RecordingSegment.hpp"
 #include <vector>
 #include "JRecordingSegment.hpp"
-#include "InterruptionReason.hpp"
+#include "AnvilInterruptionReason.hpp"
 #include <optional>
-#include "JInterruptionReason.hpp"
-#include "ListenerSubscription.hpp"
-#include "JListenerSubscription.hpp"
+#include "JAnvilInterruptionReason.hpp"
+#include "AnvilListenerSubscription.hpp"
+#include "JAnvilListenerSubscription.hpp"
 #include <functional>
 #include "JFunc_void.hpp"
 #include <NitroModules/JNICallable.hpp>
@@ -61,19 +61,19 @@ namespace margelo::nitro::audioanvil { enum class RecorderErrorCode; }
 #include "SpeakerWindow.hpp"
 #include "JFunc_void_SpeakerWindow.hpp"
 #include "JSpeakerWindow.hpp"
-#include "InterruptionEvent.hpp"
-#include "JFunc_void_InterruptionEvent.hpp"
-#include "JInterruptionEvent.hpp"
-#include "InterruptionPhase.hpp"
-#include "JInterruptionPhase.hpp"
+#include "AnvilInterruptionEvent.hpp"
+#include "JFunc_void_AnvilInterruptionEvent.hpp"
+#include "JAnvilInterruptionEvent.hpp"
+#include "AnvilInterruptionPhase.hpp"
+#include "JAnvilInterruptionPhase.hpp"
 #include "RouteChangeEvent.hpp"
 #include "JFunc_void_RouteChangeEvent.hpp"
 #include "JRouteChangeEvent.hpp"
 #include "RouteChangeReason.hpp"
 #include "JRouteChangeReason.hpp"
-#include "PermissionStatus.hpp"
-#include "JFunc_void_PermissionStatus.hpp"
-#include "JPermissionStatus.hpp"
+#include "AnvilPermissionStatus.hpp"
+#include "JFunc_void_AnvilPermissionStatus.hpp"
+#include "JAnvilPermissionStatus.hpp"
 #include "StorageWarningEvent.hpp"
 #include "JFunc_void_StorageWarningEvent.hpp"
 #include "JStorageWarningEvent.hpp"
@@ -238,43 +238,43 @@ namespace margelo::nitro::audioanvil {
       return __promise;
     }();
   }
-  ListenerSubscription JHybridAnvilRecorderSpec::addPCMListener(const std::function<void(const PCMChunk& /* chunk */)>& listener) {
-    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JListenerSubscription>(jni::alias_ref<JFunc_void_PCMChunk::javaobject> /* listener */)>("addPCMListener_cxx");
+  AnvilListenerSubscription JHybridAnvilRecorderSpec::addPCMListener(const std::function<void(const PCMChunk& /* chunk */)>& listener) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JAnvilListenerSubscription>(jni::alias_ref<JFunc_void_PCMChunk::javaobject> /* listener */)>("addPCMListener_cxx");
     auto __result = method(_javaPart, JFunc_void_PCMChunk_cxx::fromCpp(listener));
     return __result->toCpp();
   }
-  ListenerSubscription JHybridAnvilRecorderSpec::addSpeakerWindowListener(const std::function<void(const SpeakerWindow& /* window */)>& listener) {
-    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JListenerSubscription>(jni::alias_ref<JFunc_void_SpeakerWindow::javaobject> /* listener */)>("addSpeakerWindowListener_cxx");
+  AnvilListenerSubscription JHybridAnvilRecorderSpec::addSpeakerWindowListener(const std::function<void(const SpeakerWindow& /* window */)>& listener) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JAnvilListenerSubscription>(jni::alias_ref<JFunc_void_SpeakerWindow::javaobject> /* listener */)>("addSpeakerWindowListener_cxx");
     auto __result = method(_javaPart, JFunc_void_SpeakerWindow_cxx::fromCpp(listener));
     return __result->toCpp();
   }
-  ListenerSubscription JHybridAnvilRecorderSpec::addInterruptionListener(const std::function<void(const InterruptionEvent& /* event */)>& listener) {
-    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JListenerSubscription>(jni::alias_ref<JFunc_void_InterruptionEvent::javaobject> /* listener */)>("addInterruptionListener_cxx");
-    auto __result = method(_javaPart, JFunc_void_InterruptionEvent_cxx::fromCpp(listener));
+  AnvilListenerSubscription JHybridAnvilRecorderSpec::addInterruptionListener(const std::function<void(const AnvilInterruptionEvent& /* event */)>& listener) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JAnvilListenerSubscription>(jni::alias_ref<JFunc_void_AnvilInterruptionEvent::javaobject> /* listener */)>("addInterruptionListener_cxx");
+    auto __result = method(_javaPart, JFunc_void_AnvilInterruptionEvent_cxx::fromCpp(listener));
     return __result->toCpp();
   }
-  ListenerSubscription JHybridAnvilRecorderSpec::addRouteChangeListener(const std::function<void(const RouteChangeEvent& /* event */)>& listener) {
-    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JListenerSubscription>(jni::alias_ref<JFunc_void_RouteChangeEvent::javaobject> /* listener */)>("addRouteChangeListener_cxx");
+  AnvilListenerSubscription JHybridAnvilRecorderSpec::addRouteChangeListener(const std::function<void(const RouteChangeEvent& /* event */)>& listener) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JAnvilListenerSubscription>(jni::alias_ref<JFunc_void_RouteChangeEvent::javaobject> /* listener */)>("addRouteChangeListener_cxx");
     auto __result = method(_javaPart, JFunc_void_RouteChangeEvent_cxx::fromCpp(listener));
     return __result->toCpp();
   }
-  ListenerSubscription JHybridAnvilRecorderSpec::addPermissionChangeListener(const std::function<void(PermissionStatus /* status */)>& listener) {
-    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JListenerSubscription>(jni::alias_ref<JFunc_void_PermissionStatus::javaobject> /* listener */)>("addPermissionChangeListener_cxx");
-    auto __result = method(_javaPart, JFunc_void_PermissionStatus_cxx::fromCpp(listener));
+  AnvilListenerSubscription JHybridAnvilRecorderSpec::addPermissionChangeListener(const std::function<void(AnvilPermissionStatus /* status */)>& listener) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JAnvilListenerSubscription>(jni::alias_ref<JFunc_void_AnvilPermissionStatus::javaobject> /* listener */)>("addPermissionChangeListener_cxx");
+    auto __result = method(_javaPart, JFunc_void_AnvilPermissionStatus_cxx::fromCpp(listener));
     return __result->toCpp();
   }
-  ListenerSubscription JHybridAnvilRecorderSpec::addStorageWarningListener(const std::function<void(const StorageWarningEvent& /* event */)>& listener) {
-    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JListenerSubscription>(jni::alias_ref<JFunc_void_StorageWarningEvent::javaobject> /* listener */)>("addStorageWarningListener_cxx");
+  AnvilListenerSubscription JHybridAnvilRecorderSpec::addStorageWarningListener(const std::function<void(const StorageWarningEvent& /* event */)>& listener) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JAnvilListenerSubscription>(jni::alias_ref<JFunc_void_StorageWarningEvent::javaobject> /* listener */)>("addStorageWarningListener_cxx");
     auto __result = method(_javaPart, JFunc_void_StorageWarningEvent_cxx::fromCpp(listener));
     return __result->toCpp();
   }
-  ListenerSubscription JHybridAnvilRecorderSpec::addSegmentCompletedListener(const std::function<void(const RecordingSegment& /* segment */)>& listener) {
-    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JListenerSubscription>(jni::alias_ref<JFunc_void_RecordingSegment::javaobject> /* listener */)>("addSegmentCompletedListener_cxx");
+  AnvilListenerSubscription JHybridAnvilRecorderSpec::addSegmentCompletedListener(const std::function<void(const RecordingSegment& /* segment */)>& listener) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JAnvilListenerSubscription>(jni::alias_ref<JFunc_void_RecordingSegment::javaobject> /* listener */)>("addSegmentCompletedListener_cxx");
     auto __result = method(_javaPart, JFunc_void_RecordingSegment_cxx::fromCpp(listener));
     return __result->toCpp();
   }
-  ListenerSubscription JHybridAnvilRecorderSpec::addErrorListener(const std::function<void(const RecorderError& /* error */)>& listener) {
-    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JListenerSubscription>(jni::alias_ref<JFunc_void_RecorderError::javaobject> /* listener */)>("addErrorListener_cxx");
+  AnvilListenerSubscription JHybridAnvilRecorderSpec::addErrorListener(const std::function<void(const RecorderError& /* error */)>& listener) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JAnvilListenerSubscription>(jni::alias_ref<JFunc_void_RecorderError::javaobject> /* listener */)>("addErrorListener_cxx");
     auto __result = method(_javaPart, JFunc_void_RecorderError_cxx::fromCpp(listener));
     return __result->toCpp();
   }

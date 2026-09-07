@@ -5,4 +5,4 @@ import type { AnvilFactory } from '../specs/AnvilFactory.nitro';
  *
  * @see {@linkcode AnvilFactory.getPermissionStatus}
  */
-export type PermissionStatus = 'granted' | 'denied' | 'undetermined';
+export type AnvilPermissionStatus = 'granted' | 'denied' | 'undetermined';

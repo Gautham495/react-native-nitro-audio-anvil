@@ -17,7 +17,7 @@ internal class WavSegmentWriter(
 ) {
   val startedAt: Double = System.currentTimeMillis().toDouble()
   var wasInterrupted = false
-  var interruptionReason: InterruptionReason? = null
+  var interruptionReason: AnvilInterruptionReason? = null
   var routeChanged = false
 
   private val output = RandomAccessFile(file, "rw")

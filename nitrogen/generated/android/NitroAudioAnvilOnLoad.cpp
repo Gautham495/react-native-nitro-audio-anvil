@@ -20,9 +20,9 @@
 #include "JFunc_void.hpp"
 #include "JFunc_void_PCMChunk.hpp"
 #include "JFunc_void_SpeakerWindow.hpp"
-#include "JFunc_void_InterruptionEvent.hpp"
+#include "JFunc_void_AnvilInterruptionEvent.hpp"
 #include "JFunc_void_RouteChangeEvent.hpp"
-#include "JFunc_void_PermissionStatus.hpp"
+#include "JFunc_void_AnvilPermissionStatus.hpp"
 #include "JFunc_void_StorageWarningEvent.hpp"
 #include "JFunc_void_RecordingSegment.hpp"
 #include "JFunc_void_RecorderError.hpp"
@@ -55,9 +55,9 @@ void registerAllNatives() {
   margelo::nitro::audioanvil::JFunc_void_cxx::registerNatives();
   margelo::nitro::audioanvil::JFunc_void_PCMChunk_cxx::registerNatives();
   margelo::nitro::audioanvil::JFunc_void_SpeakerWindow_cxx::registerNatives();
-  margelo::nitro::audioanvil::JFunc_void_InterruptionEvent_cxx::registerNatives();
+  margelo::nitro::audioanvil::JFunc_void_AnvilInterruptionEvent_cxx::registerNatives();
   margelo::nitro::audioanvil::JFunc_void_RouteChangeEvent_cxx::registerNatives();
-  margelo::nitro::audioanvil::JFunc_void_PermissionStatus_cxx::registerNatives();
+  margelo::nitro::audioanvil::JFunc_void_AnvilPermissionStatus_cxx::registerNatives();
   margelo::nitro::audioanvil::JFunc_void_StorageWarningEvent_cxx::registerNatives();
   margelo::nitro::audioanvil::JFunc_void_RecordingSegment_cxx::registerNatives();
   margelo::nitro::audioanvil::JFunc_void_RecorderError_cxx::registerNatives();

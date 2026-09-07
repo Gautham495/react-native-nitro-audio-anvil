@@ -22,14 +22,14 @@ public protocol HybridAnvilRecorderSpec_protocol: HybridObject {
   func stop() throws -> Promise<[RecordingSegment]>
   func rotateSegment() throws -> Promise<RecordingSegment>
   func extractRange(startMs: Double, endMs: Double) throws -> Promise<String>
-  func addPCMListener(listener: @escaping (_ chunk: PCMChunk) -> Void) throws -> ListenerSubscription
-  func addSpeakerWindowListener(listener: @escaping (_ window: SpeakerWindow) -> Void) throws -> ListenerSubscription
-  func addInterruptionListener(listener: @escaping (_ event: InterruptionEvent) -> Void) throws -> ListenerSubscription
-  func addRouteChangeListener(listener: @escaping (_ event: RouteChangeEvent) -> Void) throws -> ListenerSubscription
-  func addPermissionChangeListener(listener: @escaping (_ status: PermissionStatus) -> Void) throws -> ListenerSubscription
-  func addStorageWarningListener(listener: @escaping (_ event: StorageWarningEvent) -> Void) throws -> ListenerSubscription
-  func addSegmentCompletedListener(listener: @escaping (_ segment: RecordingSegment) -> Void) throws -> ListenerSubscription
-  func addErrorListener(listener: @escaping (_ error: RecorderError) -> Void) throws -> ListenerSubscription
+  func addPCMListener(listener: @escaping (_ chunk: PCMChunk) -> Void) throws -> AnvilListenerSubscription
+  func addSpeakerWindowListener(listener: @escaping (_ window: SpeakerWindow) -> Void) throws -> AnvilListenerSubscription
+  func addInterruptionListener(listener: @escaping (_ event: AnvilInterruptionEvent) -> Void) throws -> AnvilListenerSubscription
+  func addRouteChangeListener(listener: @escaping (_ event: RouteChangeEvent) -> Void) throws -> AnvilListenerSubscription
+  func addPermissionChangeListener(listener: @escaping (_ status: AnvilPermissionStatus) -> Void) throws -> AnvilListenerSubscription
+  func addStorageWarningListener(listener: @escaping (_ event: StorageWarningEvent) -> Void) throws -> AnvilListenerSubscription
+  func addSegmentCompletedListener(listener: @escaping (_ segment: RecordingSegment) -> Void) throws -> AnvilListenerSubscription
+  func addErrorListener(listener: @escaping (_ error: RecorderError) -> Void) throws -> AnvilListenerSubscription
 }
 
 public extension HybridAnvilRecorderSpec_protocol {

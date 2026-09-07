@@ -1,4 +1,4 @@
-import type { InterruptionReason } from './InterruptionEvent';
+import type { AnvilInterruptionReason } from './AnvilInterruptionEvent';
 import type { AnvilRecorder } from '../specs/AnvilRecorder.nitro';
 
 /**
@@ -35,7 +35,7 @@ export interface RecordingSegment {
    * `true` when this segment was closed because the OS interrupted capture.
    */
   wasInterrupted: boolean;
-  interruptionReason?: InterruptionReason;
+  interruptionReason?: AnvilInterruptionReason;
   /**
    * `true` when this segment was closed because the input device changed.
    */

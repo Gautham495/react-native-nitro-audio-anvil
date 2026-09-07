@@ -17,18 +17,18 @@
 namespace margelo::nitro::audioanvil { enum class RecorderState; }
 // Forward declaration of `RecordingSegment` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecordingSegment; }
-// Forward declaration of `ListenerSubscription` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct ListenerSubscription; }
+// Forward declaration of `AnvilListenerSubscription` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct AnvilListenerSubscription; }
 // Forward declaration of `PCMChunk` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct PCMChunk; }
 // Forward declaration of `SpeakerWindow` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct SpeakerWindow; }
-// Forward declaration of `InterruptionEvent` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct InterruptionEvent; }
+// Forward declaration of `AnvilInterruptionEvent` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct AnvilInterruptionEvent; }
 // Forward declaration of `RouteChangeEvent` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RouteChangeEvent; }
-// Forward declaration of `PermissionStatus` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class PermissionStatus; }
+// Forward declaration of `AnvilPermissionStatus` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilPermissionStatus; }
 // Forward declaration of `StorageWarningEvent` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct StorageWarningEvent; }
 // Forward declaration of `RecorderError` to properly resolve imports.
@@ -39,13 +39,13 @@ namespace margelo::nitro::audioanvil { struct RecorderError; }
 #include <NitroModules/Promise.hpp>
 #include "RecordingSegment.hpp"
 #include <vector>
-#include "ListenerSubscription.hpp"
+#include "AnvilListenerSubscription.hpp"
 #include "PCMChunk.hpp"
 #include <functional>
 #include "SpeakerWindow.hpp"
-#include "InterruptionEvent.hpp"
+#include "AnvilInterruptionEvent.hpp"
 #include "RouteChangeEvent.hpp"
-#include "PermissionStatus.hpp"
+#include "AnvilPermissionStatus.hpp"
 #include "StorageWarningEvent.hpp"
 #include "RecorderError.hpp"
 
@@ -89,14 +89,14 @@ namespace margelo::nitro::audioanvil {
       virtual std::shared_ptr<Promise<std::vector<RecordingSegment>>> stop() = 0;
       virtual std::shared_ptr<Promise<RecordingSegment>> rotateSegment() = 0;
       virtual std::shared_ptr<Promise<std::string>> extractRange(double startMs, double endMs) = 0;
-      virtual ListenerSubscription addPCMListener(const std::function<void(const PCMChunk& /* chunk */)>& listener) = 0;
-      virtual ListenerSubscription addSpeakerWindowListener(const std::function<void(const SpeakerWindow& /* window */)>& listener) = 0;
-      virtual ListenerSubscription addInterruptionListener(const std::function<void(const InterruptionEvent& /* event */)>& listener) = 0;
-      virtual ListenerSubscription addRouteChangeListener(const std::function<void(const RouteChangeEvent& /* event */)>& listener) = 0;
-      virtual ListenerSubscription addPermissionChangeListener(const std::function<void(PermissionStatus /* status */)>& listener) = 0;
-      virtual ListenerSubscription addStorageWarningListener(const std::function<void(const StorageWarningEvent& /* event */)>& listener) = 0;
-      virtual ListenerSubscription addSegmentCompletedListener(const std::function<void(const RecordingSegment& /* segment */)>& listener) = 0;
-      virtual ListenerSubscription addErrorListener(const std::function<void(const RecorderError& /* error */)>& listener) = 0;
+      virtual AnvilListenerSubscription addPCMListener(const std::function<void(const PCMChunk& /* chunk */)>& listener) = 0;
+      virtual AnvilListenerSubscription addSpeakerWindowListener(const std::function<void(const SpeakerWindow& /* window */)>& listener) = 0;
+      virtual AnvilListenerSubscription addInterruptionListener(const std::function<void(const AnvilInterruptionEvent& /* event */)>& listener) = 0;
+      virtual AnvilListenerSubscription addRouteChangeListener(const std::function<void(const RouteChangeEvent& /* event */)>& listener) = 0;
+      virtual AnvilListenerSubscription addPermissionChangeListener(const std::function<void(AnvilPermissionStatus /* status */)>& listener) = 0;
+      virtual AnvilListenerSubscription addStorageWarningListener(const std::function<void(const StorageWarningEvent& /* event */)>& listener) = 0;
+      virtual AnvilListenerSubscription addSegmentCompletedListener(const std::function<void(const RecordingSegment& /* segment */)>& listener) = 0;
+      virtual AnvilListenerSubscription addErrorListener(const std::function<void(const RecorderError& /* error */)>& listener) = 0;
 
     protected:
       // Hybrid Setup

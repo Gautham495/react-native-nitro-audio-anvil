@@ -12,8 +12,8 @@ import {
 import {
   Anvil,
   type AnvilRecorder,
-  type ListenerSubscription,
-  type PermissionStatus,
+  type AnvilListenerSubscription,
+  type AnvilPermissionStatus,
   type RecorderConfig,
   type RecorderState,
   type RecordingSegment,
@@ -66,7 +66,7 @@ const STATE_COLOR: Record<RecorderState, string> = {
 
 export default function App() {
   const [permission, setPermission] =
-    useState<PermissionStatus>('undetermined');
+    useState<AnvilPermissionStatus>('undetermined');
   const [state, setState] = useState<RecorderState>('idle');
   const [durationMs, setDurationMs] = useState(0);
   const [segmentPath, setSegmentPath] = useState('');
@@ -80,7 +80,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState<string[]>([]);
 
-  const subscriptions = useRef<ListenerSubscription[]>([]);
+  const subscriptions = useRef<AnvilListenerSubscription[]>([]);
   const lastSequence = useRef(-1);
 
   const addLog = useCallback((line: string) => {

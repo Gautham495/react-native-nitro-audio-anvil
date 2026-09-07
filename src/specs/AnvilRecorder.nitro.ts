@@ -1,12 +1,12 @@
 import type { HybridObject } from 'react-native-nitro-modules';
-import type { ListenerSubscription } from '../types/ListenerSubscription';
+import type { AnvilListenerSubscription } from '../types/AnvilListenerSubscription';
 import type { RecorderState } from '../types/RecorderState';
 import type { RecordingSegment } from '../types/RecordingSegment';
 import type { PCMChunk } from '../types/PCMChunk';
 import type { SpeakerWindow } from '../types/SpeakerWindow';
-import type { InterruptionEvent } from '../types/InterruptionEvent';
+import type { AnvilInterruptionEvent } from '../types/AnvilInterruptionEvent';
 import type { RouteChangeEvent } from '../types/RouteChangeEvent';
-import type { PermissionStatus } from '../types/PermissionStatus';
+import type { AnvilPermissionStatus } from '../types/AnvilPermissionStatus';
 import type { StorageWarningEvent } from '../types/StorageWarningEvent';
 import type { RecorderError } from '../types/RecorderError';
 
@@ -75,47 +75,49 @@ export interface AnvilRecorder extends HybridObject<{
   /**
    * Live PCM chunks for streaming transcription. Do not block inside the listener.
    */
-  addPCMListener(listener: (chunk: PCMChunk) => void): ListenerSubscription;
+  addPCMListener(
+    listener: (chunk: PCMChunk) => void
+  ): AnvilListenerSubscription;
   /**
    * Overlapping PCM windows for speaker embedding.
    */
   addSpeakerWindowListener(
     listener: (window: SpeakerWindow) => void
-  ): ListenerSubscription;
+  ): AnvilListenerSubscription;
   /**
    * OS interruptions (calls, Siri, alarms, focus loss, media-server reset).
    */
   addInterruptionListener(
-    listener: (event: InterruptionEvent) => void
-  ): ListenerSubscription;
+    listener: (event: AnvilInterruptionEvent) => void
+  ): AnvilListenerSubscription;
   /**
    * Input device changes (Bluetooth, headset, speaker).
    */
   addRouteChangeListener(
     listener: (event: RouteChangeEvent) => void
-  ): ListenerSubscription;
+  ): AnvilListenerSubscription;
   /**
    * Microphone permission changes, checked whenever capture (re)starts.
    */
   addPermissionChangeListener(
-    listener: (status: PermissionStatus) => void
-  ): ListenerSubscription;
+    listener: (status: AnvilPermissionStatus) => void
+  ): AnvilListenerSubscription;
   /**
    * Free disk space dropped below `storageWarningBytes`.
    */
   addStorageWarningListener(
     listener: (event: StorageWarningEvent) => void
-  ): ListenerSubscription;
+  ): AnvilListenerSubscription;
   /**
    * A segment file was finalized (time rotation, pause, interruption, route change, stop).
    */
   addSegmentCompletedListener(
     listener: (segment: RecordingSegment) => void
-  ): ListenerSubscription;
+  ): AnvilListenerSubscription;
   /**
    * Failures inside the capture pipeline.
    */
   addErrorListener(
     listener: (error: RecorderError) => void
-  ): ListenerSubscription;
+  ): AnvilListenerSubscription;
 }

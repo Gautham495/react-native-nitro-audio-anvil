@@ -271,7 +271,7 @@ open class HybridAnvilRecorderSpec_cxx {
   }
   
   @inline(__always)
-  public final func addPCMListener(listener: bridge.Func_void_PCMChunk) -> bridge.Result_ListenerSubscription_ {
+  public final func addPCMListener(listener: bridge.Func_void_PCMChunk) -> bridge.Result_AnvilListenerSubscription_ {
     do {
       let __result = try self.__implementation.addPCMListener(listener: { () -> (PCMChunk) -> Void in
         let __wrappedFunction = bridge.wrap_Func_void_PCMChunk(listener)
@@ -280,15 +280,15 @@ open class HybridAnvilRecorderSpec_cxx {
         }
       }())
       let __resultCpp = __result
-      return bridge.create_Result_ListenerSubscription_(__resultCpp)
+      return bridge.create_Result_AnvilListenerSubscription_(__resultCpp)
     } catch (let __error) {
       let __exceptionPtr = __error.toCpp()
-      return bridge.create_Result_ListenerSubscription_(__exceptionPtr)
+      return bridge.create_Result_AnvilListenerSubscription_(__exceptionPtr)
     }
   }
   
   @inline(__always)
-  public final func addSpeakerWindowListener(listener: bridge.Func_void_SpeakerWindow) -> bridge.Result_ListenerSubscription_ {
+  public final func addSpeakerWindowListener(listener: bridge.Func_void_SpeakerWindow) -> bridge.Result_AnvilListenerSubscription_ {
     do {
       let __result = try self.__implementation.addSpeakerWindowListener(listener: { () -> (SpeakerWindow) -> Void in
         let __wrappedFunction = bridge.wrap_Func_void_SpeakerWindow(listener)
@@ -297,32 +297,32 @@ open class HybridAnvilRecorderSpec_cxx {
         }
       }())
       let __resultCpp = __result
-      return bridge.create_Result_ListenerSubscription_(__resultCpp)
+      return bridge.create_Result_AnvilListenerSubscription_(__resultCpp)
     } catch (let __error) {
       let __exceptionPtr = __error.toCpp()
-      return bridge.create_Result_ListenerSubscription_(__exceptionPtr)
+      return bridge.create_Result_AnvilListenerSubscription_(__exceptionPtr)
     }
   }
   
   @inline(__always)
-  public final func addInterruptionListener(listener: bridge.Func_void_InterruptionEvent) -> bridge.Result_ListenerSubscription_ {
+  public final func addInterruptionListener(listener: bridge.Func_void_AnvilInterruptionEvent) -> bridge.Result_AnvilListenerSubscription_ {
     do {
-      let __result = try self.__implementation.addInterruptionListener(listener: { () -> (InterruptionEvent) -> Void in
-        let __wrappedFunction = bridge.wrap_Func_void_InterruptionEvent(listener)
-        return { (__event: InterruptionEvent) -> Void in
+      let __result = try self.__implementation.addInterruptionListener(listener: { () -> (AnvilInterruptionEvent) -> Void in
+        let __wrappedFunction = bridge.wrap_Func_void_AnvilInterruptionEvent(listener)
+        return { (__event: AnvilInterruptionEvent) -> Void in
           __wrappedFunction.call(__event)
         }
       }())
       let __resultCpp = __result
-      return bridge.create_Result_ListenerSubscription_(__resultCpp)
+      return bridge.create_Result_AnvilListenerSubscription_(__resultCpp)
     } catch (let __error) {
       let __exceptionPtr = __error.toCpp()
-      return bridge.create_Result_ListenerSubscription_(__exceptionPtr)
+      return bridge.create_Result_AnvilListenerSubscription_(__exceptionPtr)
     }
   }
   
   @inline(__always)
-  public final func addRouteChangeListener(listener: bridge.Func_void_RouteChangeEvent) -> bridge.Result_ListenerSubscription_ {
+  public final func addRouteChangeListener(listener: bridge.Func_void_RouteChangeEvent) -> bridge.Result_AnvilListenerSubscription_ {
     do {
       let __result = try self.__implementation.addRouteChangeListener(listener: { () -> (RouteChangeEvent) -> Void in
         let __wrappedFunction = bridge.wrap_Func_void_RouteChangeEvent(listener)
@@ -331,32 +331,32 @@ open class HybridAnvilRecorderSpec_cxx {
         }
       }())
       let __resultCpp = __result
-      return bridge.create_Result_ListenerSubscription_(__resultCpp)
+      return bridge.create_Result_AnvilListenerSubscription_(__resultCpp)
     } catch (let __error) {
       let __exceptionPtr = __error.toCpp()
-      return bridge.create_Result_ListenerSubscription_(__exceptionPtr)
+      return bridge.create_Result_AnvilListenerSubscription_(__exceptionPtr)
     }
   }
   
   @inline(__always)
-  public final func addPermissionChangeListener(listener: bridge.Func_void_PermissionStatus) -> bridge.Result_ListenerSubscription_ {
+  public final func addPermissionChangeListener(listener: bridge.Func_void_AnvilPermissionStatus) -> bridge.Result_AnvilListenerSubscription_ {
     do {
-      let __result = try self.__implementation.addPermissionChangeListener(listener: { () -> (PermissionStatus) -> Void in
-        let __wrappedFunction = bridge.wrap_Func_void_PermissionStatus(listener)
-        return { (__status: PermissionStatus) -> Void in
+      let __result = try self.__implementation.addPermissionChangeListener(listener: { () -> (AnvilPermissionStatus) -> Void in
+        let __wrappedFunction = bridge.wrap_Func_void_AnvilPermissionStatus(listener)
+        return { (__status: AnvilPermissionStatus) -> Void in
           __wrappedFunction.call(__status.rawValue)
         }
       }())
       let __resultCpp = __result
-      return bridge.create_Result_ListenerSubscription_(__resultCpp)
+      return bridge.create_Result_AnvilListenerSubscription_(__resultCpp)
     } catch (let __error) {
       let __exceptionPtr = __error.toCpp()
-      return bridge.create_Result_ListenerSubscription_(__exceptionPtr)
+      return bridge.create_Result_AnvilListenerSubscription_(__exceptionPtr)
     }
   }
   
   @inline(__always)
-  public final func addStorageWarningListener(listener: bridge.Func_void_StorageWarningEvent) -> bridge.Result_ListenerSubscription_ {
+  public final func addStorageWarningListener(listener: bridge.Func_void_StorageWarningEvent) -> bridge.Result_AnvilListenerSubscription_ {
     do {
       let __result = try self.__implementation.addStorageWarningListener(listener: { () -> (StorageWarningEvent) -> Void in
         let __wrappedFunction = bridge.wrap_Func_void_StorageWarningEvent(listener)
@@ -365,15 +365,15 @@ open class HybridAnvilRecorderSpec_cxx {
         }
       }())
       let __resultCpp = __result
-      return bridge.create_Result_ListenerSubscription_(__resultCpp)
+      return bridge.create_Result_AnvilListenerSubscription_(__resultCpp)
     } catch (let __error) {
       let __exceptionPtr = __error.toCpp()
-      return bridge.create_Result_ListenerSubscription_(__exceptionPtr)
+      return bridge.create_Result_AnvilListenerSubscription_(__exceptionPtr)
     }
   }
   
   @inline(__always)
-  public final func addSegmentCompletedListener(listener: bridge.Func_void_RecordingSegment) -> bridge.Result_ListenerSubscription_ {
+  public final func addSegmentCompletedListener(listener: bridge.Func_void_RecordingSegment) -> bridge.Result_AnvilListenerSubscription_ {
     do {
       let __result = try self.__implementation.addSegmentCompletedListener(listener: { () -> (RecordingSegment) -> Void in
         let __wrappedFunction = bridge.wrap_Func_void_RecordingSegment(listener)
@@ -382,15 +382,15 @@ open class HybridAnvilRecorderSpec_cxx {
         }
       }())
       let __resultCpp = __result
-      return bridge.create_Result_ListenerSubscription_(__resultCpp)
+      return bridge.create_Result_AnvilListenerSubscription_(__resultCpp)
     } catch (let __error) {
       let __exceptionPtr = __error.toCpp()
-      return bridge.create_Result_ListenerSubscription_(__exceptionPtr)
+      return bridge.create_Result_AnvilListenerSubscription_(__exceptionPtr)
     }
   }
   
   @inline(__always)
-  public final func addErrorListener(listener: bridge.Func_void_RecorderError) -> bridge.Result_ListenerSubscription_ {
+  public final func addErrorListener(listener: bridge.Func_void_RecorderError) -> bridge.Result_AnvilListenerSubscription_ {
     do {
       let __result = try self.__implementation.addErrorListener(listener: { () -> (RecorderError) -> Void in
         let __wrappedFunction = bridge.wrap_Func_void_RecorderError(listener)
@@ -399,10 +399,10 @@ open class HybridAnvilRecorderSpec_cxx {
         }
       }())
       let __resultCpp = __result
-      return bridge.create_Result_ListenerSubscription_(__resultCpp)
+      return bridge.create_Result_AnvilListenerSubscription_(__resultCpp)
     } catch (let __error) {
       let __exceptionPtr = __error.toCpp()
-      return bridge.create_Result_ListenerSubscription_(__exceptionPtr)
+      return bridge.create_Result_AnvilListenerSubscription_(__exceptionPtr)
     }
   }
 }

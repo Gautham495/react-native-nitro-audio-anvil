@@ -68,74 +68,74 @@ abstract class HybridAnvilRecorderSpec: HybridObject() {
   @Keep
   abstract fun extractRange(startMs: Double, endMs: Double): Promise<String>
   
-  abstract fun addPCMListener(listener: (chunk: PCMChunk) -> Unit): ListenerSubscription
+  abstract fun addPCMListener(listener: (chunk: PCMChunk) -> Unit): AnvilListenerSubscription
   
   @DoNotStrip
   @Keep
-  private fun addPCMListener_cxx(listener: Func_void_PCMChunk): ListenerSubscription {
+  private fun addPCMListener_cxx(listener: Func_void_PCMChunk): AnvilListenerSubscription {
     val __result = addPCMListener(listener)
     return __result
   }
   
-  abstract fun addSpeakerWindowListener(listener: (window: SpeakerWindow) -> Unit): ListenerSubscription
+  abstract fun addSpeakerWindowListener(listener: (window: SpeakerWindow) -> Unit): AnvilListenerSubscription
   
   @DoNotStrip
   @Keep
-  private fun addSpeakerWindowListener_cxx(listener: Func_void_SpeakerWindow): ListenerSubscription {
+  private fun addSpeakerWindowListener_cxx(listener: Func_void_SpeakerWindow): AnvilListenerSubscription {
     val __result = addSpeakerWindowListener(listener)
     return __result
   }
   
-  abstract fun addInterruptionListener(listener: (event: InterruptionEvent) -> Unit): ListenerSubscription
+  abstract fun addInterruptionListener(listener: (event: AnvilInterruptionEvent) -> Unit): AnvilListenerSubscription
   
   @DoNotStrip
   @Keep
-  private fun addInterruptionListener_cxx(listener: Func_void_InterruptionEvent): ListenerSubscription {
+  private fun addInterruptionListener_cxx(listener: Func_void_AnvilInterruptionEvent): AnvilListenerSubscription {
     val __result = addInterruptionListener(listener)
     return __result
   }
   
-  abstract fun addRouteChangeListener(listener: (event: RouteChangeEvent) -> Unit): ListenerSubscription
+  abstract fun addRouteChangeListener(listener: (event: RouteChangeEvent) -> Unit): AnvilListenerSubscription
   
   @DoNotStrip
   @Keep
-  private fun addRouteChangeListener_cxx(listener: Func_void_RouteChangeEvent): ListenerSubscription {
+  private fun addRouteChangeListener_cxx(listener: Func_void_RouteChangeEvent): AnvilListenerSubscription {
     val __result = addRouteChangeListener(listener)
     return __result
   }
   
-  abstract fun addPermissionChangeListener(listener: (status: PermissionStatus) -> Unit): ListenerSubscription
+  abstract fun addPermissionChangeListener(listener: (status: AnvilPermissionStatus) -> Unit): AnvilListenerSubscription
   
   @DoNotStrip
   @Keep
-  private fun addPermissionChangeListener_cxx(listener: Func_void_PermissionStatus): ListenerSubscription {
+  private fun addPermissionChangeListener_cxx(listener: Func_void_AnvilPermissionStatus): AnvilListenerSubscription {
     val __result = addPermissionChangeListener(listener)
     return __result
   }
   
-  abstract fun addStorageWarningListener(listener: (event: StorageWarningEvent) -> Unit): ListenerSubscription
+  abstract fun addStorageWarningListener(listener: (event: StorageWarningEvent) -> Unit): AnvilListenerSubscription
   
   @DoNotStrip
   @Keep
-  private fun addStorageWarningListener_cxx(listener: Func_void_StorageWarningEvent): ListenerSubscription {
+  private fun addStorageWarningListener_cxx(listener: Func_void_StorageWarningEvent): AnvilListenerSubscription {
     val __result = addStorageWarningListener(listener)
     return __result
   }
   
-  abstract fun addSegmentCompletedListener(listener: (segment: RecordingSegment) -> Unit): ListenerSubscription
+  abstract fun addSegmentCompletedListener(listener: (segment: RecordingSegment) -> Unit): AnvilListenerSubscription
   
   @DoNotStrip
   @Keep
-  private fun addSegmentCompletedListener_cxx(listener: Func_void_RecordingSegment): ListenerSubscription {
+  private fun addSegmentCompletedListener_cxx(listener: Func_void_RecordingSegment): AnvilListenerSubscription {
     val __result = addSegmentCompletedListener(listener)
     return __result
   }
   
-  abstract fun addErrorListener(listener: (error: RecorderError) -> Unit): ListenerSubscription
+  abstract fun addErrorListener(listener: (error: RecorderError) -> Unit): AnvilListenerSubscription
   
   @DoNotStrip
   @Keep
-  private fun addErrorListener_cxx(listener: Func_void_RecorderError): ListenerSubscription {
+  private fun addErrorListener_cxx(listener: Func_void_RecorderError): AnvilListenerSubscription {
     val __result = addErrorListener(listener)
     return __result
   }

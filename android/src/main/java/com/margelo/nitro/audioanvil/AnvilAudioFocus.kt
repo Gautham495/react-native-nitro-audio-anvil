@@ -21,7 +21,7 @@ internal class AnvilAudioFocus(context: Context, private val handler: Handler) {
   private var interrupted = false
   private var deviceCallbackPrimed = false
 
-  var onInterruptionBegan: ((InterruptionReason) -> Unit)? = null
+  var onInterruptionBegan: ((AnvilInterruptionReason) -> Unit)? = null
   var onInterruptionEnded: ((Boolean) -> Unit)? = null
   var onRouteChanged: ((RouteChangeReason, String) -> Unit)? = null
 
@@ -95,14 +95,14 @@ internal class AnvilAudioFocus(context: Context, private val handler: Handler) {
     interrupted = false
   }
 
-  private fun currentReason(): InterruptionReason {
+  private fun currentReason(): AnvilInterruptionReason {
     return when (audioManager.mode) {
-      AudioManager.MODE_IN_CALL, AudioManager.MODE_IN_COMMUNICATION, AudioManager.MODE_RINGTONE -> InterruptionReason.CALL
-      else -> InterruptionReason.FOCUS
+      AudioManager.MODE_IN_CALL, AudioManager.MODE_IN_COMMUNICATION, AudioManager.MODE_RINGTONE -> AnvilInterruptionReason.CALL
+      else -> AnvilInterruptionReason.FOCUS
     }
   }
 
-  private fun began(reason: InterruptionReason) {
+  private fun began(reason: AnvilInterruptionReason) {
     if (interrupted) return
     interrupted = true
     onInterruptionBegan?.invoke(reason)

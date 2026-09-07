@@ -15,11 +15,11 @@ extension Notification {
   }
 
   /// `AVAudioSessionInterruptionReasonKey` mapped to the Nitro enum (`.other` when absent).
-  var anvilInterruptionReason: InterruptionReason {
+  var anvilInterruptionReason: AnvilInterruptionReason {
     guard #available(iOS 14.5, *),
           let raw = userInfo?[AVAudioSessionInterruptionReasonKey] as? UInt,
           let reason = AVAudioSession.InterruptionReason(rawValue: raw) else { return .other }
-    return InterruptionReason.from(reason)
+    return AnvilInterruptionReason.from(reason)
   }
 
   /// `AVAudioSessionRouteChangeReasonKey` decoded.

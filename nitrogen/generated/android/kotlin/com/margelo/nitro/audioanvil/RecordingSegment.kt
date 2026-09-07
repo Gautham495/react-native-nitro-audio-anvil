@@ -47,7 +47,7 @@ data class RecordingSegment(
   val wasInterrupted: Boolean,
   @DoNotStrip
   @Keep
-  val interruptionReason: InterruptionReason?,
+  val interruptionReason: AnvilInterruptionReason?,
   @DoNotStrip
   @Keep
   val routeChanged: Boolean,
@@ -99,7 +99,7 @@ data class RecordingSegment(
     @Keep
     @Suppress("unused")
     @JvmStatic
-    private fun fromCpp(index: Double, filePath: String, sampleRate: Double, durationMs: Double, fileSize: Double, mediaStartMs: Double, startedAt: Double, endedAt: Double, wasInterrupted: Boolean, interruptionReason: InterruptionReason?, routeChanged: Boolean, sha256: String): RecordingSegment {
+    private fun fromCpp(index: Double, filePath: String, sampleRate: Double, durationMs: Double, fileSize: Double, mediaStartMs: Double, startedAt: Double, endedAt: Double, wasInterrupted: Boolean, interruptionReason: AnvilInterruptionReason?, routeChanged: Boolean, sha256: String): RecordingSegment {
       return RecordingSegment(index, filePath, sampleRate, durationMs, fileSize, mediaStartMs, startedAt, endedAt, wasInterrupted, interruptionReason, routeChanged, sha256)
     }
   }

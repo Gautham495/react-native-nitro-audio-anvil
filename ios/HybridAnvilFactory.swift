@@ -13,11 +13,11 @@ final class HybridAnvilFactory: HybridAnvilFactorySpec {
     }
   }
 
-  func getPermissionStatus() throws -> PermissionStatus {
+  func getPermissionStatus() throws -> AnvilPermissionStatus {
     return AVAudioSession.sharedInstance().anvilPermissionStatus
   }
 
-  func requestPermission() throws -> Promise<PermissionStatus> {
+  func requestPermission() throws -> Promise<AnvilPermissionStatus> {
     return Promise.async { await AVAudioSession.anvilRequestPermission() }
   }
 

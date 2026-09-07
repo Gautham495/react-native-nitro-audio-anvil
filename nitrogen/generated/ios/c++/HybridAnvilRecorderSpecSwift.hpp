@@ -16,26 +16,26 @@ namespace NitroAudioAnvil { class HybridAnvilRecorderSpec_cxx; }
 namespace margelo::nitro::audioanvil { enum class RecorderState; }
 // Forward declaration of `RecordingSegment` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecordingSegment; }
-// Forward declaration of `InterruptionReason` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class InterruptionReason; }
-// Forward declaration of `ListenerSubscription` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct ListenerSubscription; }
+// Forward declaration of `AnvilInterruptionReason` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilInterruptionReason; }
+// Forward declaration of `AnvilListenerSubscription` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct AnvilListenerSubscription; }
 // Forward declaration of `PCMChunk` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct PCMChunk; }
 // Forward declaration of `ArrayBufferHolder` to properly resolve imports.
 namespace NitroModules { class ArrayBufferHolder; }
 // Forward declaration of `SpeakerWindow` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct SpeakerWindow; }
-// Forward declaration of `InterruptionEvent` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct InterruptionEvent; }
-// Forward declaration of `InterruptionPhase` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class InterruptionPhase; }
+// Forward declaration of `AnvilInterruptionEvent` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct AnvilInterruptionEvent; }
+// Forward declaration of `AnvilInterruptionPhase` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilInterruptionPhase; }
 // Forward declaration of `RouteChangeEvent` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RouteChangeEvent; }
 // Forward declaration of `RouteChangeReason` to properly resolve imports.
 namespace margelo::nitro::audioanvil { enum class RouteChangeReason; }
-// Forward declaration of `PermissionStatus` to properly resolve imports.
-namespace margelo::nitro::audioanvil { enum class PermissionStatus; }
+// Forward declaration of `AnvilPermissionStatus` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class AnvilPermissionStatus; }
 // Forward declaration of `StorageWarningEvent` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct StorageWarningEvent; }
 // Forward declaration of `RecorderError` to properly resolve imports.
@@ -48,19 +48,19 @@ namespace margelo::nitro::audioanvil { enum class RecorderErrorCode; }
 #include <NitroModules/Promise.hpp>
 #include "RecordingSegment.hpp"
 #include <vector>
-#include "InterruptionReason.hpp"
+#include "AnvilInterruptionReason.hpp"
 #include <optional>
-#include "ListenerSubscription.hpp"
+#include "AnvilListenerSubscription.hpp"
 #include <functional>
 #include "PCMChunk.hpp"
 #include <NitroModules/ArrayBuffer.hpp>
 #include <NitroModules/ArrayBufferHolder.hpp>
 #include "SpeakerWindow.hpp"
-#include "InterruptionEvent.hpp"
-#include "InterruptionPhase.hpp"
+#include "AnvilInterruptionEvent.hpp"
+#include "AnvilInterruptionPhase.hpp"
 #include "RouteChangeEvent.hpp"
 #include "RouteChangeReason.hpp"
-#include "PermissionStatus.hpp"
+#include "AnvilPermissionStatus.hpp"
 #include "StorageWarningEvent.hpp"
 #include "RecorderError.hpp"
 #include "RecorderErrorCode.hpp"
@@ -177,7 +177,7 @@ namespace margelo::nitro::audioanvil {
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline ListenerSubscription addPCMListener(const std::function<void(const PCMChunk& /* chunk */)>& listener) override {
+    inline AnvilListenerSubscription addPCMListener(const std::function<void(const PCMChunk& /* chunk */)>& listener) override {
       auto __result = _swiftPart.addPCMListener(listener);
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
@@ -185,7 +185,7 @@ namespace margelo::nitro::audioanvil {
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline ListenerSubscription addSpeakerWindowListener(const std::function<void(const SpeakerWindow& /* window */)>& listener) override {
+    inline AnvilListenerSubscription addSpeakerWindowListener(const std::function<void(const SpeakerWindow& /* window */)>& listener) override {
       auto __result = _swiftPart.addSpeakerWindowListener(listener);
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
@@ -193,7 +193,7 @@ namespace margelo::nitro::audioanvil {
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline ListenerSubscription addInterruptionListener(const std::function<void(const InterruptionEvent& /* event */)>& listener) override {
+    inline AnvilListenerSubscription addInterruptionListener(const std::function<void(const AnvilInterruptionEvent& /* event */)>& listener) override {
       auto __result = _swiftPart.addInterruptionListener(listener);
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
@@ -201,7 +201,7 @@ namespace margelo::nitro::audioanvil {
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline ListenerSubscription addRouteChangeListener(const std::function<void(const RouteChangeEvent& /* event */)>& listener) override {
+    inline AnvilListenerSubscription addRouteChangeListener(const std::function<void(const RouteChangeEvent& /* event */)>& listener) override {
       auto __result = _swiftPart.addRouteChangeListener(listener);
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
@@ -209,7 +209,7 @@ namespace margelo::nitro::audioanvil {
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline ListenerSubscription addPermissionChangeListener(const std::function<void(PermissionStatus /* status */)>& listener) override {
+    inline AnvilListenerSubscription addPermissionChangeListener(const std::function<void(AnvilPermissionStatus /* status */)>& listener) override {
       auto __result = _swiftPart.addPermissionChangeListener(listener);
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
@@ -217,7 +217,7 @@ namespace margelo::nitro::audioanvil {
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline ListenerSubscription addStorageWarningListener(const std::function<void(const StorageWarningEvent& /* event */)>& listener) override {
+    inline AnvilListenerSubscription addStorageWarningListener(const std::function<void(const StorageWarningEvent& /* event */)>& listener) override {
       auto __result = _swiftPart.addStorageWarningListener(listener);
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
@@ -225,7 +225,7 @@ namespace margelo::nitro::audioanvil {
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline ListenerSubscription addSegmentCompletedListener(const std::function<void(const RecordingSegment& /* segment */)>& listener) override {
+    inline AnvilListenerSubscription addSegmentCompletedListener(const std::function<void(const RecordingSegment& /* segment */)>& listener) override {
       auto __result = _swiftPart.addSegmentCompletedListener(listener);
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
@@ -233,7 +233,7 @@ namespace margelo::nitro::audioanvil {
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline ListenerSubscription addErrorListener(const std::function<void(const RecorderError& /* error */)>& listener) override {
+    inline AnvilListenerSubscription addErrorListener(const std::function<void(const RecorderError& /* error */)>& listener) override {
       auto __result = _swiftPart.addErrorListener(listener);
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
