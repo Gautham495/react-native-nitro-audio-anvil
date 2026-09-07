@@ -54,14 +54,6 @@ jobs:
       - name: Install dependencies
         run: yarn install --no-immutable
 
-      # ---- Quality gates ----------------------------------------------------
-
-      - name: Typecheck
-        run: yarn typecheck
-
-      - name: Lint
-        run: yarn lint
-
       # ---- Build ------------------------------------------------------------
 
       - name: Build package

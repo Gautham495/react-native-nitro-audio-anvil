@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import {
   TrackPlayer,
@@ -11,7 +11,6 @@ import { Button, ButtonRow } from './ui/Button';
 import { ProgressBar } from './ui/ProgressBar';
 import { colors, formatClock, spacing } from './theme';
 
-/** Now-playing card driven entirely by react-native-nitro-player hooks. */
 export function PlayerCard() {
   const { track } = useOnChangeTrack();
   const { state } = useOnPlaybackStateChange();
