@@ -42,20 +42,20 @@ const RECORDER_CONFIG: RecorderConfig = {
 };
 
 const fileSystemBridge = {
-  async readText(path) {
+  async readText(path: string) {
     try {
       return await RNFS.readFile(path, 'utf8');
     } catch {
       return null;
     }
   },
-  async writeText(path, contents) {
+  async writeText(path: string, contents: string) {
     await RNFS.writeFile(path, contents, 'utf8');
   },
-  async delete(path) {
+  async delete(path: string) {
     if (await RNFS.exists(path)) await RNFS.unlink(path);
   },
-  async list(directory) {
+  async list(directory: string) {
     try {
       return (await RNFS.readdir(directory)).map((entry) => entry.path);
     } catch {
