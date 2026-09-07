@@ -1,0 +1,23 @@
+{
+  "cxxNamespace": ["nitroaudioanvil"],
+  "ios": {
+    "iosModuleName": "NitroAudioAnvil"
+  },
+  "android": {
+    "androidNamespace": ["nitroaudioanvil"],
+    "androidCxxLibName": "nitroaudioanvil"
+  },
+  "autolinking": {
+    "NitroAudioAnvil": {
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "NitroAudioAnvil"
+      },
+      "android": {
+        "language": "kotlin",
+        "implementationClassName": "NitroAudioAnvil"
+      }
+    }
+  },
+  "ignorePaths": ["node_modules"]
+}
