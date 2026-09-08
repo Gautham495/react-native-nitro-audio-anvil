@@ -105,4 +105,5 @@ dependencies {
   implementation "com.facebook.react:react-android"
   implementation "org.jetbrains.kotlin:kotlin-stdlib:${getExtOrDefault('kotlinVersion')}"
   implementation project(":react-native-nitro-modules")
+  implementation "androidx.lifecycle:lifecycle-process:2.7.0"
 }

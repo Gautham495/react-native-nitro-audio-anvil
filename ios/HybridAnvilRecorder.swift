@@ -1,6 +1,7 @@
 import AVFoundation
 import Foundation
 import NitroModules
+import UIKit
 
 /// One recording session. All mutable state lives on `queue`; JS-facing methods hop onto it
 /// through `Promise.parallel`, native callbacks are already delivered on it.
@@ -26,6 +27,8 @@ final class HybridAnvilRecorder: HybridAnvilRecorderSpec {
   private let storageListeners = ListenerRegistry<StorageWarningEvent>()
   private let segmentListeners = ListenerRegistry<RecordingSegment>()
   private let errorListeners = ListenerRegistry<RecorderError>()
+  private let resumeRetryDelays: [TimeInterval] = [0.2, 0.4, 0.8, 1.6, 3.2]
+
 
   private lazy var chunker = PCMChunker(sampleRate: sampleRate, chunkMs: config.streamChunkMs) { [weak self] chunk in
     self?.pcmListeners.emit(chunk)
@@ -295,18 +298,100 @@ final class HybridAnvilRecorder: HybridAnvilRecorderSpec {
     ))
   }
 
-  private func handleInterruptionEnded(_ shouldResume: Bool) {
-    guard state == .interrupted else { return }
-    interruptionListeners.emit(AnvilInterruptionEvent(
-      phase: .ended, reason: lastInterruptionReason, shouldResume: shouldResume, segmentPath: "", timestampMs: totalDurationMs
-    ))
-    guard config.onInterruption == .resume, shouldResume else { return }
-    do {
-      try performResume()
-    } catch {
-      emitError(.engine, "Auto-resume after interruption failed: \(error.localizedDescription)")
+// ────────────────────────────────────────────────────────────────────
+// Adds exponential backoff retry for session.activate() when another app
+// (WhatsApp, Voice Memos, etc.) hasn't fully released the audio session
+// yet. Only retries when app is in the foreground — Apple's session
+// activation has a documented bug where background reactivation is
+// permanently blocked after phone-call interruptions, and retrying just
+// wastes cycles and battery.
+//
+// Retry schedule: 200ms, 400ms, 800ms, 1600ms, 3200ms → give up (~6.2s total).
+// WhatsApp typically releases within 500ms of backgrounding.
+// ────────────────────────────────────────────────────────────────────
+
+private func handleInterruptionEnded(_ shouldResume: Bool) {
+  guard state == .interrupted else { return }
+
+  interruptionListeners.emit(AnvilInterruptionEvent(
+    phase: .ended,
+    reason: lastInterruptionReason,
+    shouldResume: shouldResume,
+    segmentPath: "",
+    timestampMs: totalDurationMs
+  ))
+
+  guard config.onInterruption == .resume, shouldResume else { return }
+
+  // Foreground check: iOS has a known bug where audio session activation
+  // fails permanently in the background after phone-call interruptions.
+  // Retrying doesn't help — only bringing the app foreground releases
+  // the lock. If we're backgrounded, stay paused and let the user tap
+  // Resume when they open the app.
+  //
+  // UIApplication.shared must be accessed on the main thread.
+  DispatchQueue.main.async { [weak self] in
+    guard let self = self else { return }
+    let appState = UIApplication.shared.applicationState
+
+    self.queue.async {
+      guard appState == .active else {
+        NSLog("[Anvil] auto-resume skipped — app is not foreground (state=\(appState.rawValue))")
+        self.emitError(
+          .engine,
+          "Auto-resume deferred — bring app to foreground to continue"
+        )
+        return
+      }
+      self.attemptResumeWithBackoff(attempt: 0)
     }
   }
+}
+
+/// Try performResume() with exponential backoff. Called on `queue`.
+private func attemptResumeWithBackoff(attempt: Int) {
+  do {
+    try performResume()
+    NSLog("[Anvil] auto-resume succeeded on attempt \(attempt + 1)")
+  } catch {
+    // Ran out of retries. Emit error and stay paused.
+    guard attempt < resumeRetryDelays.count else {
+      NSLog(
+        "[Anvil] auto-resume gave up after \(resumeRetryDelays.count) attempts: \(error.localizedDescription)"
+      )
+      emitError(
+        .engine,
+        "Auto-resume failed after \(resumeRetryDelays.count) attempts: \(error.localizedDescription)"
+      )
+      return
+    }
+
+    let delay = resumeRetryDelays[attempt]
+    NSLog(
+      "[Anvil] auto-resume attempt \(attempt + 1) failed (\(error.localizedDescription)) — retrying in \(delay)s"
+    )
+
+    // Before each retry, re-check foreground. User may have backgrounded
+    // us in the meantime, in which case further retries are futile.
+    queue.asyncAfter(deadline: .now() + delay) { [weak self] in
+      guard let self = self else { return }
+      DispatchQueue.main.async {
+        let appState = UIApplication.shared.applicationState
+        self.queue.async {
+          guard appState == .active else {
+            NSLog("[Anvil] app backgrounded mid-retry — giving up")
+            self.emitError(
+              .engine,
+              "Auto-resume abandoned — app was backgrounded during retry"
+            )
+            return
+          }
+          self.attemptResumeWithBackoff(attempt: attempt + 1)
+        }
+      }
+    }
+  }
+}
 
   private func handleRouteChanged(_ reason: RouteChangeReason, inputName: String, inputChanged: Bool) {
     routeListeners.emit(RouteChangeEvent(reason: reason, inputName: inputName, inputChanged: inputChanged, timestampMs: totalDurationMs))

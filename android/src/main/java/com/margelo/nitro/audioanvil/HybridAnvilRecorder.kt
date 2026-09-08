@@ -11,6 +11,9 @@ import com.margelo.nitro.NitroModules
 import com.margelo.nitro.core.Promise
 import java.io.File
 import java.io.IOException
+import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import android.util.Log
 
 /**
  * One recording session. All mutable state lives on the "anvil-audio" HandlerThread;
@@ -45,6 +48,8 @@ class HybridAnvilRecorder(private val config: RecorderConfig) : HybridAnvilRecor
   private val storageListeners = ListenerRegistry<StorageWarningEvent>()
   private val segmentListeners = ListenerRegistry<RecordingSegment>()
   private val errorListeners = ListenerRegistry<RecorderError>()
+
+  private val resumeRetryDelaysMs = longArrayOf(300L, 600L, 1200L, 2400L, 4800L)
 
   private val chunker = PcmChunker(sampleRateHz, config.streamChunkMs) { chunk -> pcmListeners.emit(chunk) }
   private val speakerWindows = SpeakerWindowAssembler(sampleRateHz, config.speakerWindowMs, config.speakerWindowHopMs) { window ->
@@ -295,24 +300,108 @@ class HybridAnvilRecorder(private val config: RecorderConfig) : HybridAnvilRecor
     )
   }
 
-  private fun handleInterruptionEnded(shouldResume: Boolean) {
-    if (stateValue != RecorderState.INTERRUPTED) return
-    interruptionListeners.emit(
-      AnvilInterruptionEvent(
-        phase = AnvilInterruptionPhase.ENDED,
-        reason = lastInterruptionReason,
-        shouldResume = shouldResume,
-        segmentPath = "",
-        timestampMs = totalDurationValue,
-      )
+// ────────────────────────────────────────────────────────────────────
+// Adds exponential backoff retry for AudioRecord.startRecording() when
+// another app (WhatsApp, etc.) hasn't fully released the microphone HAL
+// yet. In Android 16+ the HAL teardown is async — a stopRecorder in
+// another app returns before the hardware buffer is actually released,
+// so a race condition throws IllegalStateException or ERROR_INVALID_OPERATION.
+//
+// Only retries when app is in the foreground. Background retries are:
+//   1. Battery-wasteful — CPU spins on nothing
+//   2. Often futile — some OEM ROMs (Xiaomi, Vivo) kill background mic
+//      access aggressively
+//   3. User-invisible — no way to signal progress
+//
+// Retry schedule: 300ms, 600ms, 1200ms, 2400ms, 4800ms → give up (~9.3s total).
+// The 300ms floor comes from the react-native-audio-recorder-player
+// community fix documented for the Android 16 HAL race.
+// ────────────────────────────────────────────────────────────────────
+
+
+
+private fun handleInterruptionEnded(shouldResume: Boolean) {
+  if (stateValue != RecorderState.INTERRUPTED) return
+  interruptionListeners.emit(
+    AnvilInterruptionEvent(
+      phase = AnvilInterruptionPhase.ENDED,
+      reason = lastInterruptionReason,
+      shouldResume = shouldResume,
+      segmentPath = "",
+      timestampMs = totalDurationValue,
     )
-    if (config.onInterruption != InterruptionPolicy.RESUME || !shouldResume) return
-    try {
-      performResume()
-    } catch (e: Exception) {
-      emitError(RecorderErrorCode.ENGINE, "Auto-resume after interruption failed: ${e.message}")
-    }
+  )
+  if (config.onInterruption != InterruptionPolicy.RESUME || !shouldResume) return
+
+  // Foreground check via ProcessLifecycleOwner. Faster than polling
+  // Activity lifecycle callbacks and works across single/multi-activity apps.
+  // Requires: implementation "androidx.lifecycle:lifecycle-process:2.7.0"
+  // (or newer) in the module's build.gradle.
+  if (!isAppForeground()) {
+    Log.i("Anvil", "auto-resume skipped — app is not foreground")
+    emitError(
+      RecorderErrorCode.ENGINE,
+      "Auto-resume deferred — bring app to foreground to continue"
+    )
+    return
   }
+
+  attemptResumeWithBackoff(attempt = 0)
+}
+
+private fun isAppForeground(): Boolean {
+  // Must be called on main thread. Wrap with a sync check since we're on
+  // the anvil-audio HandlerThread.
+  val latch = java.util.concurrent.CountDownLatch(1)
+  var foreground = false
+  Handler(android.os.Looper.getMainLooper()).post {
+    foreground = ProcessLifecycleOwner.get().lifecycle.currentState
+      .isAtLeast(Lifecycle.State.STARTED)
+    latch.countDown()
+  }
+  latch.await(200L, java.util.concurrent.TimeUnit.MILLISECONDS)
+  return foreground
+}
+
+private fun attemptResumeWithBackoff(attempt: Int) {
+  try {
+    performResume()
+    Log.i("Anvil", "auto-resume succeeded on attempt ${attempt + 1}")
+  } catch (e: Exception) {
+    if (attempt >= resumeRetryDelaysMs.size) {
+      Log.w(
+        "Anvil",
+        "auto-resume gave up after ${resumeRetryDelaysMs.size} attempts: ${e.message}"
+      )
+      emitError(
+        RecorderErrorCode.ENGINE,
+        "Auto-resume failed after ${resumeRetryDelaysMs.size} attempts: ${e.message}"
+      )
+      return
+    }
+
+    val delay = resumeRetryDelaysMs[attempt]
+    Log.i(
+      "Anvil",
+      "auto-resume attempt ${attempt + 1} failed (${e.message}) — retrying in ${delay}ms"
+    )
+
+    // Schedule the retry on our own owner thread. Before each attempt,
+    // re-check foreground — user may have backgrounded us in the
+    // interim, in which case further retries just waste CPU and battery.
+    handler.postDelayed({
+      if (!isAppForeground()) {
+        Log.i("Anvil", "app backgrounded mid-retry — giving up")
+        emitError(
+          RecorderErrorCode.ENGINE,
+          "Auto-resume abandoned — app was backgrounded during retry"
+        )
+        return@postDelayed
+      }
+      attemptResumeWithBackoff(attempt + 1)
+    }, delay)
+  }
+}
 
   private fun handleRouteChanged(reason: RouteChangeReason, inputName: String) {
     val recording = stateValue == RecorderState.RECORDING

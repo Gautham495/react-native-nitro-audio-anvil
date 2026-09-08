@@ -6,6 +6,7 @@ import {
 } from 'react-native-nitro-audio-anvil';
 
 const fs = ReactNativeBlobUtil.fs;
+
 export const OUTPUT_DIRECTORY = `${fs.dirs.DocumentDir}/anvil-recordings`;
 
 const fileSystemBridge = {

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   View,
+  AppState,
 } from 'react-native';
 
 import {
@@ -26,14 +27,23 @@ import {
   ensureOutputDirectory,
   recorderService,
 } from './helpers/recorderService';
+
 import { playTrack, toFileUrl } from './helpers/playerBridge';
+
 import { Card, Row } from './helpers/ui/Card';
+
 import { Button, ButtonRow } from './helpers/ui/Button';
+
 import { LevelMeter } from './helpers/ui/LevelMeter';
+
 import { PlayerCard } from './helpers/PlayerCard';
+
 import { UploadCard, type UploadTarget } from './helpers/UploadCard';
+
 import { RecordingsList } from './helpers/RecordingsList';
+
 import { EventLog } from './helpers/EventLog';
+
 import {
   basename,
   colors,
@@ -79,6 +89,9 @@ export default function App() {
   const [uploadTarget, setUploadTarget] = useState<UploadTarget | null>(null);
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState<string[]>([]);
+
+  const resumeDeferredRef = useRef(false);
+  const recorderRef = useRef<AnvilRecorder | null>(null);
 
   const subscriptions = useRef<AnvilListenerSubscription[]>([]);
   const lastSequence = useRef(-1);
@@ -145,11 +158,41 @@ export default function App() {
     const interval = setInterval(() => {
       const recorder = recorderService.active;
       if (!recorder) return;
+
+      recorderRef.current = recorder;
+
       setState(recorder.state);
       setDurationMs(recorder.totalDurationMs);
       setSegmentPath(recorder.currentSegmentPath);
     }, 200);
     return () => clearInterval(interval);
+  }, []);
+
+  // AppState listener — reacts to foreground transitions:
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', async (nextState) => {
+      if (nextState !== 'active') return;
+      if (!resumeDeferredRef.current) return;
+      if (!recorderRef.current) return;
+
+      console.log(
+        '[example] app came foreground with deferred resume — retrying'
+      );
+      resumeDeferredRef.current = false;
+
+      // Small delay to let the OS complete the foreground handoff before
+      // trying to acquire the mic session.
+      await new Promise((r) => setTimeout(() => r, 300));
+
+      try {
+        await recorderRef.current.resume();
+        console.log('[example] deferred resume succeeded');
+      } catch (err: any) {
+        console.log('[example] deferred resume failed:', err?.message);
+      }
+    });
+
+    return () => sub.remove();
   }, []);
 
   // ---- listeners -------------------------------------------------------------------------------
@@ -213,6 +256,16 @@ export default function App() {
         }),
         recorder.addErrorListener((error) => {
           addLog(`ERROR [${error.code}] ${error.message}`);
+
+          if (
+            error.message?.includes('Auto-resume deferred') ||
+            error.message?.includes('Auto-resume abandoned')
+          ) {
+            resumeDeferredRef.current = true;
+            console.log(
+              '[example] deferred resume flagged, waiting for foreground'
+            );
+          }
         }),
       ];
     },
