@@ -1,252 +1,164 @@
-# iOS quirks — background microphone recording on Apple platforms
+# iOS quirks — background microphone recording on iOS
 
-**iOS handles background audio better than Android does.** There is no OEM overlay, no Xiaomi HyperOS, no third-party battery killer. Apple owns the entire stack from silicon to `AVAudioSession` and enforces one consistent contract across every device.
+**iOS is the well-behaved platform for background audio — until it isn't.** Unlike Android, there's no per-OEM battery-killer layer to fight; a correctly configured app records in the background reliably. But iOS has its own set of sharp edges, and every one of them is in the audio session and interruption machinery, not the file layer. This document is the field-tested list.
 
-That contract has bugs, undocumented behavior, and edge cases that only surface on real hardware. This document is the field-tested list of iOS quirks that affect long-form microphone recording — the ones that cost you a meeting if you do not know they exist.
-
-If you have not read the [interruption handling section](../README.md#-interruption-handling-in-detail) of the README, do that first. This document is the layer beneath — the Apple-specific quirks that affect *how* Anvil implements that pattern.
+If you have not read the [interruption handling section](../README.md#-interruption-handling-in-detail) of the README, do that first. Most of what follows is the platform detail beneath that section.
 
 ---
 
-## Why iOS is not automatically friendlier than Android
+## The short version
 
-Yes, Apple owns the whole stack. No, that does not mean everything works.
+| Symptom                                                        | Cause                                                                                                  | Fix                                                                        |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Recording doesn't resume after a phone call while backgrounded | `AVAudioSession.setActive(true)` permanently fails in background after a call interruption (Apple bug) | Foreground-gate auto-resume; retry on `AppState` → `active`                |
+| `AudioCodecInitialize failed` at `createRecorder`/`start`      | `aacBitrate` above the AAC-LC ceiling for the chosen `sampleRate`                                      | Lower bitrate or raise sample rate; `48000 / 96000` is the safe default    |
+| Voice sounds robotic / thin / metallic                         | `.measurement` session mode, or a resampler running because your `sampleRate` ≠ mic-native             | Use `.default` mode (Anvil's default); record at 48 kHz                    |
+| Recording stops ~30 s after backgrounding                      | `UIBackgroundModes` missing `audio`                                                                    | Add it to Info.plist                                                       |
+| Segment splits or silence when a headset connects              | Route change; SCO/Bluetooth input swap                                                                 | Expected — Anvil rotates the segment; the audio is intact                  |
+| Everything breaks after a call/Control-Center audio glitch     | `mediaServicesWereReset` — the whole audio stack was torn down                                         | Anvil treats it as an interruption and rebuilds; wire the same resume path |
+| Interruptions never fire in the simulator                      | The simulator's audio stack isn't real                                                                 | Test on a device — the simulator lies                                      |
 
-- iOS has documented `AVAudioSession` bugs Apple has not fixed in years
-- iOS enforces stricter rules on when background audio is allowed
-- iOS route changes can silently switch your recording to a device that produces no input
-- iOS returns "success" on session activation calls that actually failed
-- CarPlay, AirPods, Bluetooth SCO, and speakerphone route in unpredictable ways
-- The simulator lies about most of these behaviors, so you cannot catch them until you ship
-
-The upside: once you know the quirks, they are stable. Apple does not ship an OS update every 6 months that resets user settings. Your fix on iOS 17 still works on iOS 18. On Android you re-verify every OEM after every major system update.
-
----
-
-## Quirk tier list
-
-For the impatient — what actually matters:
-
-| Tier         | Quirk                                                     | Impact                                                              |
-| ------------ | --------------------------------------------------------- | ------------------------------------------------------------------- |
-| **Critical** | Background reactivation permanent-fail after phone call  | Recording cannot resume until user foregrounds the app              |
-| **Critical** | `UIBackgroundModes = audio` required for background      | Without it, iOS suspends the app within 30 seconds of backgrounding |
-| **High**     | `AVAudioSession` category must include `.mixWithOthers` for polite coexistence | Otherwise your app forces other audio apps to stop, jarringly       |
-| **High**     | Media services reset (rare Bluetooth chaos edge case)     | Full audio subsystem restart, session and engine both invalidated   |
-| **Medium**   | Route change to Bluetooth mid-recording                   | Sample rate may change, requiring engine restart                    |
-| **Medium**   | CarPlay routing overrides everything                      | Recording may route to car speakers instead of iPhone mic           |
-| **Low**      | Simulator lies about interruption behavior                | Testing feels fine, real device fails                               |
+The rest of this document is each of these in detail.
 
 ---
 
-## The Big One: Background reactivation permanent-fail after phone call
+## Background reactivation permanent-fail (the big one)
 
-**The bug**: If your app is in the background when a phone-call interruption ends, `AVAudioSession.setActive(true)` returns error `560557684` ("Session activation failed") and **retrying does not help**. The session is permanently in the "interrupted" state until the user brings your app to the foreground.
+**Verdict**: The single most important iOS quirk. If you get one thing right, get this.
 
-**This is documented on the Apple Developer Forums** and has been open for years. Apple's own guidance is essentially "expect this and handle it gracefully."
+**Symptom**: User is recording, a phone call comes in, they take it with your app backgrounded, they hang up — and the recording never resumes. On the next foreground it may or may not come back depending on how you wired resume.
 
-**What Anvil does**:
+**What's actually happening**: After a phone-call interruption ends, iOS sends the interruption-ended notification with a `shouldResume` hint. But if your app is **in the background** when you call `AVAudioSession.setActive(true)` to resume, the call **fails — and keeps failing, permanently, for the lifetime of that session**, with error `561015905` / `AVAudioSessionErrorCodeCannotStartPlaying` or a generic `560557684`. This is a long-standing Apple platform bug, not something you can retry your way out of. Retrying `setActive(true)` in the background just burns CPU against a wall.
 
-- On native side, `handleInterruptionEnded` checks `UIApplication.shared.applicationState`
-- If background, emit an error `"Auto-resume deferred — bring app to foreground to continue"` and stop retrying
-- Do not waste CPU on retries that Apple has told us will never succeed
+**The only thing that clears it**: the app coming to the foreground. Once foregrounded, `setActive(true)` succeeds normally.
 
-**What your app must do**:
+**What Anvil does**: on interruption-end, native checks the foreground state _before_ attempting resume. If backgrounded, it does **not** retry in a loop — it emits an error with the message `Auto-resume deferred — bring app to foreground to continue` and stops. Retrying while backgrounded is pointless (the bug) and wasteful.
 
-Wire an `AppState` listener that watches for foreground transitions. When the user returns to your app, call `recorder.resume()` explicitly. The [README interruption section](../README.md#-interruption-handling-in-detail) shows the pattern.
+**What your app must do**: wire an `AppState` listener that, on the transition to `active`, retries `recorder.resume()` if a deferred flag is set. This is the pattern in the [README interruption section](../README.md#-interruption-handling-in-detail) — it is not optional on iOS, it's the other half of the fix. Without it, a call taken with your app backgrounded ends the recording until the user manually taps resume.
 
-**Test scenario**: Start recording → hit the home button → make a phone call → hang up → wait 30 seconds → open your app. Recording should resume within 500ms of foreground.
-
-If it does not, one of two things is wrong:
-
-1. The AppState listener is not wired (the most common problem)
-2. The recorder reference in your closure is stale — use `useRef` not `useState` for the recorder
+**Verify**: look for the exact string `Auto-resume deferred` in your `addErrorListener`. If you see it, this is the bug and the AppState listener is the fix. If instead you see `Auto-resume failed after N attempts`, native _was_ foreground and hit the retry cap — a different problem (the other app is still holding the mic; see the README).
 
 ---
 
-## `UIBackgroundModes = audio` in Info.plist
+## AAC-LC bitrate ceiling — `AudioCodecInitialize failed`
 
-**Non-negotiable for background recording.** Without this entitlement in `Info.plist`, iOS suspends your app within 30 seconds of the user pressing the home button. Your capture stops, your PCM listener stops, and when the user comes back the recording is 30 seconds long.
+**Verdict**: A hard failure at recorder creation that looks cryptic but has a simple cause.
 
-**What to add**:
+**Symptom**: `Anvil.createRecorder(...)` or the first `start()` throws on iOS with a message mentioning `AudioCodecInitialize` (often surfacing from `CodecConverter.cpp`), or `kAudio_ParamError`. Reproduces on both simulator and device.
+
+**Cause**: The `aacBitrate` you configured is above the AAC-LC maximum for the chosen `sampleRate`. AAC-LC has a per-sample-rate bitrate ceiling — a bitrate that's fine at 48 kHz is rejected outright at 16 kHz mono. `AVAudioConverter` doesn't clamp; it fails codec init with an opaque error.
+
+**The ceiling Anvil enforces** (mono, matching the AAC-LC spec):
+
+| Sample rate | Max `aacBitrate` (mono) |
+| ----------- | ----------------------- |
+| 8 000 Hz    | 24 000 bps              |
+| 16 000 Hz   | 48 000 bps              |
+| 22 050 Hz   | 64 000 bps              |
+| 24 000 Hz   | 72 000 bps              |
+| 32 000 Hz   | 96 000 bps              |
+| 44 100 Hz   | 192 000 bps             |
+| 48 000 Hz   | 192 000 bps             |
+
+**Fix**: either lower `aacBitrate` for your sample rate, or raise the sample rate. `sampleRate: 48000, aacBitrate: 96000` is the recommended default for voice — it's the mic-native rate on modern iPhones (so no resampler, see below), it's comfortably under the ceiling, and 96 kbps mono is transparent for speech.
+
+Anvil's `RecorderConfigValidator` throws a readable error for a bad combination _before_ the native codec is touched, so you get a clear message at `createRecorder(...)` rather than a `CodecConverter.cpp` crash mid-recording. If you're seeing the raw codec error, you're on a build without the validator or you bypassed it.
+
+---
+
+## Robotic / thin / metallic voice
+
+**Verdict**: Two distinct iOS causes, both in the capture path, both fixable in config.
+
+**Symptom**: Recording completes and plays, but the voice sounds robotic, underwater, pitched-off, or has a persistent artifact. Playing the raw `.aac` segment in VLC sounds bad too (so it's capture-side, not your player).
+
+**Cause 1 — wrong audio session mode.** `AVAudioSession` mode `.measurement` disables the input processing chain (AGC, echo cancellation) and behaves differently from `.default`. It's meant for scientific measurement, not meeting audio, and it produces thin/robotic voice. **Anvil uses `.default`.** If you patched `AnvilAudioSession` to `.measurement`, revert it.
+
+**Cause 2 — the resampler is doing work.** If you configure a `sampleRate` that isn't the mic's native rate (48 kHz on modern iPhones), `AVAudioConverter` runs a real-time resampler in the capture path, and under load it produces artifacts. This is the most common cause. **Fix**: record at 48 kHz. If a downstream model needs 16 kHz (many streaming STT services do), resample **after** the bytes are captured — on a worker, off the capture path — never by asking the mic for 16 kHz.
+
+**Diagnose**: play `00000.aac` directly in VLC or ffplay. Bad in VLC → capture-side, one of the two above. Fine in VLC but bad in your app → your playback stack, not Anvil.
+
+> There's a third cause that's platform-agnostic and lived in the encoder, not the session: an `AVAudioConverterInputBlock` that returns the same PCM buffer on every call (instead of flipping to `.noDataNow` after handing it over once) makes the converter emit duplicated frames — fast-forwarded, crackling audio. Anvil's encoder handles the input block correctly. If you forked `AacEncoder`, that's the thing to check.
+
+---
+
+## Background mode — `UIBackgroundModes`
+
+**Verdict**: One Info.plist key stands between you and a recording that survives the lock screen.
+
+**Symptom**: Recording runs fine while the app is foreground, then stops ~30 seconds after the user locks the phone or switches apps.
+
+**Cause**: Without the `audio` background mode, iOS suspends your app shortly after backgrounding, which tears down capture.
+
+**Fix**: in `Info.plist`:
 
 ```xml
+<key>NSMicrophoneUsageDescription</key>
+<string>Records your conversations</string>
 <key>UIBackgroundModes</key>
 <array>
   <string>audio</string>
 </array>
-<key>NSMicrophoneUsageDescription</key>
-<string>Records your conversations</string>
 ```
 
-**A common mistake**: developers add `audio` to `UIBackgroundModes` but forget that the app must **also be actively producing or consuming audio** for iOS to keep it alive. Anvil's `AVAudioEngine` inputNode tap satisfies this — as long as the engine is running, iOS considers you an active audio app.
-
-**If you background the app and immediately pause the recorder**, iOS still suspends you within 30 seconds. Background mode requires *active* audio work.
-
-**Symptom this quirk causes**: Recordings that stop exactly around the 30-second mark after backgrounding. Confirm the entitlement, then confirm the engine is running (not paused) at the moment of backgrounding.
+`NSMicrophoneUsageDescription` is separately mandatory — without it the app is rejected at the permission prompt. `UIBackgroundModes = audio` is what keeps capture alive when backgrounded. There is no OEM layer to also fight, unlike Android — on iOS this one key is the whole story for background survival.
 
 ---
 
-## AVAudioSession category and options
+## CarPlay and Bluetooth route chaos
 
-**The right category for long-form recording**:
+**Verdict**: iOS route changes are frequent and sometimes nonsensical; the goal is that they never corrupt a segment.
 
-```swift
-try session.setCategory(
-  .playAndRecord,          // or .record if you never play back
-  mode: .voiceChat,        // tuned for speech, disables echo cancellation
-  options: [
-    .mixWithOthers,        // don't force other audio apps to stop
-    .allowBluetooth,       // let AirPods work as input
-    .defaultToSpeaker,     // route playback to speaker not receiver
-  ]
-)
-```
+**What happens**: connecting or disconnecting a Bluetooth headset, plugging in wired headphones, CarPlay attaching/detaching, or Control Center swapping output all fire `routeChangeNotification`. Some of these swap the _input_ device mid-recording; some are output-only but still churn the session.
 
-**Why each option matters**:
+**What Anvil does**: on a route change that affects the input, it finalizes the current segment and starts a fresh one, so no single `.aac` ever mixes two input devices. You get a `routeChange` event and a clean segment boundary.
 
-- **`.mixWithOthers`** — Without this, activating your session forces Spotify, YouTube, and other audio apps to stop. Users perceive this as rude and buggy. With it, you politely coexist — you take the mic, they keep playing their audio ducked or at full volume.
+**The Bluetooth-specific trap**: when a Bluetooth headset's microphone becomes the input, iOS switches the whole link to the low-bandwidth SCO codec (the "phone call" Bluetooth mode) — 8 or 16 kHz, muffled. This is a Bluetooth hardware limitation, not an Anvil bug: BT can't do high-quality output and mic input simultaneously. If a user records with AirPods as the input, the audio _will_ be phone-call quality. The fix is product-level: prefer the built-in mic for recording, or warn the user. There is nothing the capture layer can do about SCO.
 
-- **`.allowBluetooth`** — Without this, connecting AirPods does not route the mic to them. AirPods keep playing audio from the phone speaker, awkwardly. With it, AirPods become a mic input.
-
-- **`.defaultToSpeaker`** — Without this, `.playAndRecord` routes playback to the *receiver* (the tiny speaker near your ear). Users perceive this as "no sound." With it, playback comes from the loud speaker at the bottom of the phone.
-
-**Common wrong combinations**:
-
-- `.playAndRecord` without `.defaultToSpeaker` → playback through the receiver
-- `.record` category with playback code elsewhere → your `AVAudioPlayer` silently fails
-- No `.mixWithOthers` → hostile to other audio apps
-- `.playback` category with recording code → recording silently fails
+**CarPlay**: route changes on attach/detach are the main issue; they're handled the same as any route change (segment rotation). CarPlay itself doesn't break recording, it just generates route churn.
 
 ---
 
-## Media services reset — the rare Bluetooth chaos edge case
+## Media services reset
 
-**The bug**: iOS emits `AVAudioSession.mediaServicesWereResetNotification` when the audio subsystem restarts. This happens rarely but predictably:
+**Verdict**: Rare, violent, and fully recoverable if you wire it.
 
-- Bluetooth device drops out and reconnects mid-recording
-- System audio glitch after a `mediaServicesWereLostNotification`
-- Certain third-party audio apps crashing hard
+**Symptom**: Everything audio suddenly dies mid-recording — often after another app's audio glitch, a Control Center fumble, or an OS hiccup.
 
-**What happens**: Your `AVAudioSession` is invalidated. Your `AVAudioEngine` is invalidated. Any in-flight `AudioQueue` is destroyed. You cannot just call `resume()` — the whole session must be rebuilt from scratch.
+**Cause**: `AVAudioSession` posts `mediaServicesWereResetNotification`. The entire audio server (`mediaserverd`) was torn down and restarted; every audio object your process held is now invalid. Apple's guidance is to dispose and rebuild everything.
 
-**What Anvil does**:
+**What Anvil does**: treats it exactly like an interruption — finalizes the current segment (so nothing on disk is lost), tears down the capture engine, emits an interruption event, and runs the same foreground-gated resume path. Because it's routed through the interruption machinery, the same `AppState` resume listener that fixes the background-call bug also recovers a media-services reset.
 
-- Listens for `mediaServicesWereResetNotification` on the shared session
-- On fire: stops the engine, finalizes the current segment with `interruptionReason: .reset`, sets state to `.interrupted`
-- Emits both a `began` and `ended` interruption event so JS can display "recording paused / recording resumed" in the UI
-- Rebuilds the session (`setCategory` + `setActive`) and restarts the engine
-
-**Symptom this quirk causes**: A brief pause (500–2000ms) in the middle of a recording, always after a Bluetooth event. Users may or may not notice.
+**What you do**: nothing extra — if you wired the interruption/resume pattern from the README, media-services reset is already covered.
 
 ---
 
-## Route changes mid-recording
+## The simulator lies
 
-**Symptoms**: User plugs in headphones → recording continues but sample rate jumps from 48kHz to 44.1kHz. User plugs into car via CarPlay → recording routes to CarPlay mic (usually a lower-quality far-field mic). User's AirPods die → recording routes to iPhone bottom mic.
+**Verdict**: Useful for the file pipeline, useless for anything touching the audio session.
 
-**What iOS does**: Emits `AVAudioSession.routeChangeNotification` with a reason (`.newDeviceAvailable`, `.oldDeviceUnavailable`, `.categoryChange`, etc.). Your `AVAudioEngine` may or may not restart automatically depending on the reason.
+| Behaviour                                             | iOS Simulator                                                                                                      |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Recording from the host mic                           | ✅ works                                                                                                           |
+| Segment writing, manifest sealing, discovery/recovery | ✅ works                                                                                                           |
+| Interruption events                                   | ⚠️ don't fire naturally; `Debug → Simulate Memory Warning` or playing audio in another app is a poor approximation |
+| CallKit call detection                                | ❌ no phone in a simulator                                                                                         |
+| Bluetooth / CarPlay route changes                     | ❌ no real routes                                                                                                  |
+| Background-mode behaviour                             | ❌ unreliable                                                                                                      |
+| The background reactivation bug                       | ❌ won't reproduce (needs a real call)                                                                             |
 
-**What Anvil does**:
+**The rule**: the simulator's virtual audio stack does not behave like real hardware. Anything involving interruptions, routes, background, or the phone-call resume bug **must** be tested on a device. The simulator is fine for verifying that segments write and recover correctly, and nothing more.
 
-- Listens for route changes and emits a `routeChange` event
-- Finalizes the current segment so no file mixes two input devices
-- Restarts the engine on `.newDeviceAvailable` or `.oldDeviceUnavailable`
-
-**The gotcha**: Some route changes come with a sample rate change your app is not prepared for. If you hardcoded `sampleRate: 16000` in your config but the new input is 44.1kHz, iOS will resample for you — but with mediocre quality. If you care about audio quality across route changes, listen for the change and re-verify the actual sample rate.
-
-**Rare but real**: Route change to a device with no input available. This happens with certain Bluetooth accessories that report as "audio devices" but only support playback. Anvil handles this by returning silence until the route changes again.
-
----
-
-## CarPlay is its own dimension
-
-**CarPlay routes audio unpredictably.** When a user with an iPhone connects to CarPlay:
-
-- Recording may route to the CarPlay microphone (usually far-field, lower quality)
-- The iPhone's own mic is still available but not the default
-- `AVAudioSession.currentRoute` reports a CarPlay device that behaves differently from Bluetooth
-- Route changes happen mid-drive as the connection flaps
-
-**What to do**:
-
-- Check `AVAudioSession.sharedInstance().currentRoute` for a CarPlay device
-- If detected mid-recording, surface a warning to the user: "You are connected to CarPlay. Recording quality may be reduced."
-- Anvil does not currently auto-detect CarPlay — if this matters for your use case, add a check in your app layer using `AVAudioSessionPortDescription.portType == .carAudio`
-
-**Not urgent** for most apps, but if you are recording customer meetings that happen while the rep drives, worth handling.
+If you're chasing robotic audio in the simulator specifically, note that the simulator pipes your Mac's mic through the host CoreAudio stack, and if your Mac's input is a Bluetooth headset the same SCO downgrade applies at the host level — so simulator audio quality tells you nothing about device quality. Switch your Mac's input to the built-in mic, or just test on a device.
 
 ---
 
-## Simulator lies
+## The pragmatic ship
 
-**The iOS Simulator behaves nothing like a real device for audio.** Do not use it as ground truth.
+iOS needs far less babysitting than Android — there's no per-brand modal to build, no autostart whitelist, no user setup steps. The entire iOS reliability story is:
 
-**Specifically**:
+1. `UIBackgroundModes = audio` and `NSMicrophoneUsageDescription` in Info.plist.
+2. The `AppState` foreground-resume listener from the README (fixes the background-call bug and media-services reset in one).
+3. A sane `sampleRate` / `aacBitrate` (48000 / 96000) so codec init never fails and no resampler runs.
 
-- ✅ Recording from the host Mac's microphone works
-- ✅ Segment writing and reading works
-- ❌ Interruption events fire inconsistently or not at all
-- ❌ CallKit call detection does not work (no phone in a simulator)
-- ❌ Bluetooth route changes don't work
-- ❌ Background mode behavior is unreliable — you can simulate backgrounding but the audio subsystem does not respond the way it does on device
-- ❌ Media services reset never fires
-- ❌ CarPlay never fires
-
-**Every quirk in this document manifests on real hardware, not in the simulator.** Test on iPhone 14 or newer with a SIM card in it. Take an actual phone call. Connect actual AirPods. Ride an actual car with CarPlay. That is the only way to catch these.
-
----
-
-## Common iOS-specific mistakes
-
-Ranked from most-common to rarest:
-
-1. **Forgetting `UIBackgroundModes = audio`** → recording stops on backgrounding
-2. **Wiring interruption listener but not `AppState`** → recording pauses forever after a backgrounded phone call
-3. **Using `.record` category then trying to play the recording** → silent playback
-4. **Setting session category during a phone call** → `AVAudioSessionErrorCodeCannotStartRecording`
-5. **Requesting permission with a vague `NSMicrophoneUsageDescription`** → App Store rejection
-6. **Deactivating the session on `stop()` without `.notifyOthersOnDeactivation`** → other audio apps stay ducked forever
-7. **Not handling `mediaServicesWereResetNotification`** → recording appears to work but produces silence after a Bluetooth glitch
-
----
-
-## What Anvil handles for you
-
-The library takes care of the most painful quirks:
-
-- ✅ `AVAudioSession` category setup (`.playAndRecord`, `.mixWithOthers`, `.allowBluetooth`, `.defaultToSpeaker`)
-- ✅ Interruption notification handling with exponential backoff auto-resume
-- ✅ Foreground check before retrying (works around the background-reactivation permanent-fail bug)
-- ✅ `mediaServicesWereResetNotification` handling with session rebuild
-- ✅ Route change handling with segment rotation
-- ✅ Segment finalization on every interruption so no bytes are lost
-- ✅ Permission monitoring — if the user revokes permission mid-recording, you get an event
-- ✅ WAV header patching + fsync so a crash never corrupts the file
-
-What you must do at the app layer:
-
-- ⚠️ Add `UIBackgroundModes = audio` to your `Info.plist`
-- ⚠️ Wire an `AppState` listener for deferred-resume-on-foreground
-- ⚠️ Handle CarPlay if it matters for your use case
-- ⚠️ Test on real hardware, not just the simulator
-
----
-
-## References
-
-- [Apple Developer Forums: Session activation failed after phone call](https://developer.apple.com/forums/thread/813278) — the permanent-fail bug in the wild
-- [AVAudioSession Programming Guide](https://developer.apple.com/library/archive/documentation/Audio/Conceptual/AudioSessionProgrammingGuide/) — Apple's guide (dated but still the canonical reference)
-- [WWDC25: Enhance your app's audio recording capabilities](https://developer.apple.com/videos/play/wwdc2025/251/) — iOS 26 Bluetooth capture improvements, Spatial Audio recording
-
----
-
-## When something in this document breaks
-
-Apple ships iOS updates every year. Most of these quirks have been stable for 5+ years, but Bluetooth stack changes, CarPlay updates, and occasional `AVAudioSession` behavior changes can invalidate parts of this document. If you hit an iOS issue that this document does not cover:
-
-1. Check if it reproduces on the previous iOS version
-2. Check the Apple Developer Forums for recent posts with the same error code
-3. File an issue on the repo with the six-item bug report template from [troubleshooting.md](./troubleshooting.md)
-
-This is a living document. Every real-world iOS quirk we hit lands here.
+Get those three right and iOS records 60–90 minute meetings through calls, backgrounding, route changes and media resets without losing a file. The one thing you genuinely cannot fix is Bluetooth SCO input quality — that's physics, not code. Everything else on this page is handled at the library layer or with the one AppState listener.

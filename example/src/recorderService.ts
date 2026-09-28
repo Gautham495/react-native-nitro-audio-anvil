@@ -16,11 +16,6 @@ export async function ensureOutputDirectory(): Promise<void> {
   if (!(await fs.exists(OUTPUT_DIRECTORY))) await fs.mkdir(OUTPUT_DIRECTORY);
 }
 
-/**
- * A thin JS-side owner for one active recording at a time. Anvil 2.0 removed
- * `createRecordingService`; the shape here is deliberately smaller — begin, end,
- * peek at the active recorder, list what was left behind by a crash.
- */
 export const recorderService = {
   active: null as AnvilRecorder | null,
   activeRecordingId: null as string | null,

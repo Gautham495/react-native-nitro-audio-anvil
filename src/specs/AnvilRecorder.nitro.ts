@@ -33,11 +33,10 @@ import type { RecorderError } from '../types/RecorderError';
  *
  * Create one with `Anvil.createRecorder(config)`.
  */
-export interface AnvilRecorder
-  extends HybridObject<{
-    ios: 'swift';
-    android: 'kotlin';
-  }> {
+export interface AnvilRecorder extends HybridObject<{
+  ios: 'swift';
+  android: 'kotlin';
+}> {
   /**
    * The recording's id — the folder name and exactly the string you passed to
    * `createRecorder`.
