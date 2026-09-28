@@ -57,8 +57,11 @@ namespace margelo::nitro::audioanvil {
     std::shared_ptr<Promise<std::shared_ptr<HybridAnvilRecorderSpec>>> createRecorder(const RecorderConfig& config) override;
     AnvilPermissionStatus getPermissionStatus() override;
     std::shared_ptr<Promise<AnvilPermissionStatus>> requestPermission() override;
-    std::shared_ptr<Promise<std::vector<OrphanedRecording>>> discoverOrphanedRecordings(const std::string& directory) override;
-    std::shared_ptr<Promise<RecordingSegment>> concatenate(const std::vector<std::string>& segmentPaths, const std::string& outputPath) override;
+    std::shared_ptr<Promise<std::vector<RecoveredRecording>>> discoverOrphanedRecordings(const std::string& outputDirectory) override;
+    std::shared_ptr<Promise<RecordingSegment>> concatenate(const std::string& outputDirectory, const std::string& recordingId, const std::string& outputPath) override;
+    std::shared_ptr<Promise<bool>> deleteRecording(const std::string& outputDirectory, const std::string& recordingId) override;
+    std::shared_ptr<Promise<std::vector<PendingUpload>>> retryPendingUploads(const std::string& outputDirectory) override;
+    std::shared_ptr<Promise<void>> markSegmentUploaded(const std::string& outputDirectory, const std::string& recordingId, const std::string& filename) override;
 
   private:
     jni::global_ref<JHybridAnvilFactorySpec::JavaPart> _javaPart;

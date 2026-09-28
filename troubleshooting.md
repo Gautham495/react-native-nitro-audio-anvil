@@ -11,14 +11,17 @@ If you have not read the [interruption handling section](../README.md#-interrupt
 1. [Recording stops when I lock my phone](#recording-stops-when-i-lock-my-phone)
 2. [After a phone call, recording does not auto-resume](#after-a-phone-call-recording-does-not-auto-resume)
 3. [After WhatsApp / Voice Memos / Siri, recording does not auto-resume](#after-whatsapp--voice-memos--siri-recording-does-not-auto-resume)
-4. [The recording file is empty or 0 bytes](#the-recording-file-is-empty-or-0-bytes)
-5. [The recording file is corrupted / will not play](#the-recording-file-is-corrupted--will-not-play)
-6. [Recording started but produces only silence](#recording-started-but-produces-only-silence)
-7. [Segments are much smaller than expected](#segments-are-much-smaller-than-expected)
-8. [I keep getting "Auto-resume deferred" — is that a bug?](#i-keep-getting-auto-resume-deferred--is-that-a-bug)
-9. [The example app works but my integration doesn't](#the-example-app-works-but-my-integration-doesnt)
-10. [Emulator vs real device — what actually works where](#emulator-vs-real-device--what-actually-works-where)
-11. [How to get useful logs to share](#how-to-get-useful-logs-to-share)
+4. [iOS: "AudioCodecInitialize failed" or "kAudio\_ParamError"](#ios-audiocodecinitialize-failed-or-kaudio_paramerror)
+5. [Voice sounds robotic, metallic or chipmunky](#voice-sounds-robotic-metallic-or-chipmunky)
+6. [The recording folder is empty or the manifest is missing](#the-recording-folder-is-empty-or-the-manifest-is-missing)
+7. [A segment file won't play in a player or transcoder](#a-segment-file-wont-play-in-a-player-or-transcoder)
+8. [Recording started but produces only silence](#recording-started-but-produces-only-silence)
+9. [Segments are much shorter than expected](#segments-are-much-shorter-than-expected)
+10. [HLS stream never appears in the player](#hls-stream-never-appears-in-the-player)
+11. [I keep getting "Auto-resume deferred" — is that a bug?](#i-keep-getting-auto-resume-deferred--is-that-a-bug)
+12. [The example app works but my integration doesn't](#the-example-app-works-but-my-integration-doesnt)
+13. [Emulator vs real device — what actually works where](#emulator-vs-real-device--what-actually-works-where)
+14. [How to get useful logs to share](#how-to-get-useful-logs-to-share)
 
 ---
 
@@ -84,15 +87,64 @@ Wire the AppState listener from the [README](../README.md#-interruption-handling
 
 ---
 
-## The recording file is empty or 0 bytes
+## iOS: "AudioCodecInitialize failed" or "kAudio_ParamError"
 
-**Symptom**: `recorder.stop()` returns segments but the file at `segment.filePath` is 0 bytes.
+**Symptom**: `Anvil.createRecorder(...)` or `recorder.start()` throws on iOS with a message from `AudioCodecInitialize` at `CodecConverter.cpp:1646`, or `kAudio_ParamError`. Reproduces on both simulator and real device.
+
+**Cause**: The `aacBitrate` you configured is above the AAC-LC ceiling for the chosen `sampleRate`. AAC-LC has different maximum bitrates at each sample rate — 64 kbps is fine at 44.1 or 48 kHz but rejected outright at 16 kHz mono. `AVAudioConverter` returns a cryptic error instead of clamping.
+
+**The per-sample-rate ceiling Anvil enforces** (matches AAC-LC spec):
+
+| Sample rate | Max `aacBitrate` (mono) |
+| ----------- | ----------------------- |
+| 8 000 Hz    | 24 000 bps              |
+| 16 000 Hz   | 48 000 bps              |
+| 22 050 Hz   | 64 000 bps              |
+| 24 000 Hz   | 72 000 bps              |
+| 32 000 Hz   | 96 000 bps              |
+| 44 100 Hz   | 192 000 bps             |
+| 48 000 Hz   | 192 000 bps             |
+
+**Fix**: Either lower `aacBitrate` for your chosen sample rate, or raise the sample rate. `48000 / 96000` is a good default for voice — mic-native rate on most iPhones (skips the resampler entirely, see next section), plenty of headroom for the encoder, small files.
+
+`RecorderConfigValidator` throws an `AnvilError` with a readable message before the native codec is touched, so a bad config surfaces at `createRecorder(...)` rather than mid-recording.
+
+---
+
+## Voice sounds robotic, metallic or chipmunky
+
+**Symptom**: Recording completes cleanly, plays back, but the voice sounds off — robotic, underwater, pitched wrong, or with a persistent buzzing artifact.
+
+**Almost always one of three things**:
+
+**1. Sample rate mismatch — the resampler is doing work.**  
+If you configure `sampleRate: 16000` on an iPhone whose mic delivers 48 kHz natively, `AVAudioConverter` runs a real-time downsampler in the capture path. Under load or with an imperfect feeding pattern, the resampler produces artifacts.  
+**Fix**: record at the mic-native rate. On modern iPhones that is 48 000 Hz. On most Android devices it is also 48 000 Hz, occasionally 44 100. If you need 16 kHz for a streaming STT service, resample downstream — after the bytes are on disk — never on the capture path.
+
+**2. Wrong audio session mode on iOS.**  
+`.measurement` mode disables software AGC and echo cancellation, and its clock behaves differently. Fine for scientific measurement, bad for meeting audio. Anvil 2.0 uses `.default` mode by default. If you patched `AnvilAudioSession` to use `.measurement`, revert it.
+
+**3. AAC bitrate too low for the content.**  
+Voice at 48 kbps mono is fine. Music, or voice + significant background noise, at 32 kbps mono starts sounding metallic. Bump `aacBitrate` up one step and retest. See the ceiling table above for the maximum you can go without hitting the codec-init error.
+
+**Diagnosis**:
+
+Play the raw `00000.aac` file in VLC directly (not through your app). If VLC also sounds bad, the issue is on the capture side — one of the three above. If VLC sounds fine but your player sounds bad, the issue is in your playback stack.
+
+---
+
+## The recording folder is empty or the manifest is missing
+
+**Symptom**: You called `recorder.stop()` and `outputDirectory/<recordingId>/` exists but contains no files, or `manifest.m3u8` is missing.
+
+**Almost always means the recorder never actually produced audio.** Segments only get written when the encoder has enough PCM samples to fill a segment. If you called `start()` and then `stop()` faster than `segmentDurationMs`, and nothing was captured, you get an empty folder.
 
 **Likely causes**:
 
-1. **Permission was revoked mid-recording**. Check `permissionChange` events. If mic permission dropped during the recording, iOS/Android silently deliver silence.
-2. **AudioRecord could not initialize on Android**. Check logcat for `IllegalStateException` or `AudioRecord: start() status -38`. Usually happens right after another app released the mic — the HAL is still in cleanup. Retry with backoff (Anvil already does this on native side, but if you are hitting it programmatically, wait 500–1000ms before retrying).
+1. **Permission was revoked mid-recording**. Check `permissionChange` events. If mic permission dropped during the recording, iOS/Android silently deliver silence and no segments finalize.
+2. **AudioRecord could not initialize on Android**. Check logcat for `IllegalStateException` or `AudioRecord: start() status -38`. Usually happens right after another app released the mic — the HAL is still in cleanup. Retry with backoff (Anvil already does this on native side, but if you are hitting it programmatically, wait 500–1000 ms before retrying).
 3. **iOS route changed to a device with no input**. Rare, but if the recording is going to Bluetooth and the Bluetooth device disconnects during a route change, the input source can become nil for a moment.
+4. **Recording lasted less than `segmentDurationMs` on `stop()`** — in that case the tail segment is finalized on stop, so the folder should still contain one small `.aac` and a sealed manifest. If the folder is truly empty, `start()` never produced anything.
 
 **Diagnosis**:
 
@@ -104,30 +156,37 @@ recorder.addPermissionChangeListener((s) => console.log('[perm]', s));
 recorder.addRouteChangeListener((r) =>
   console.log('[route]', r.reason, r.inputName)
 );
+recorder.addSegmentCompletedListener((s) =>
+  console.log('[segment]', s.index, s.filename, s.fileSize, 'bytes')
+);
 ```
 
-If none of those fire and you still get 0 bytes, the microphone hardware itself is not producing samples. This is a device-level issue — try recording with the built-in Voice Memos app to confirm the mic works at all.
+If none of those fire and you still get an empty folder, the microphone hardware itself is not producing samples. This is a device-level issue — try recording with the built-in Voice Memos app to confirm the mic works at all.
 
 ---
 
-## The recording file is corrupted / will not play
+## A segment file won't play in a player or transcoder
 
-**Symptom**: The `.wav` file exists but no player will open it, or it plays for 0 seconds.
+**Symptom**: A `.aac` segment exists, has non-zero size, but VLC / ffmpeg / your STT ingest rejects it or plays garbage.
 
-**Most likely cause**: The WAV header size field was never patched. Anvil patches the header every `fsyncIntervalMs` and once more on `stop()`. If the process was force-killed between `fsync` cycles, the header may still say "data size = 0" while the file has bytes.
+**Understand what Anvil writes**: each segment is a plain **ADTS AAC-LC** stream. Every frame carries its own header describing sample rate, channel count and frame length — there is no container, no index, nothing to finalize. A player that reads `audio/aac` should handle it. If yours doesn't:
 
-**Fix**: Anvil handles this on next launch. Call `Anvil.discoverOrphanedRecordings(recordingsDir)` — it repairs any WAV headers that never got their final patch by reading the actual file size and rewriting the header. This runs automatically if you use `createRecordingService`.
+**Most likely cause 1 — the file is truncated inside a frame.**  
+Very rare — requires a power cut mid-write with an incomplete frame still in the OS page cache. `Anvil.discoverOrphanedRecordings` runs an ADTS frame scan at launch and drops any file that fails to parse. If discovery hasn't run yet on this launch, the truncated file is still there.  
+**Fix**: run `Anvil.discoverOrphanedRecordings(outputDirectory)` before touching any orphaned folder. It repairs manifests and drops unparseable trailing segments.
 
-**Manual repair** (if you have an orphaned file from before you integrated `discoverOrphanedRecordings`):
+**Most likely cause 2 — the tool wants a container.**  
+Some pipelines expect `.m4a`, `.mp4` or `.aac-adts` extensions specifically, or want an MP4 container even though ADTS is just as valid.  
+**Fix**: transmux without re-encoding —
 
-```ts
-// The header repair is deterministic. If you have a raw PCM chunk you know is valid:
-// - RIFF header should say file size = totalSize - 8
-// - data chunk should say size = totalSize - 44 (standard 44-byte header)
-// Anvil handles this internally; expose it if you need to.
+```sh
+ffmpeg -i 00000.aac -c copy 00000.m4a
 ```
 
-If the file plays with a garbled first 44 bytes but valid audio after that, the header is definitely the issue. If the audio itself is garbled (crackling, jumping), that is a capture-side issue — usually the sample rate mismatch between what you configured and what the OS delivered (some Android OEMs ignore the requested sample rate).
+Instant, no quality loss. Do this on the server, not on device.
+
+**Most likely cause 3 — bitrate ceiling issue upstream.**  
+If the encoder was misconfigured (see the AudioCodecInitialize section above), individual frames may have been produced with anomalies before Anvil rejected the config. Delete and re-record.
 
 ---
 
@@ -157,9 +216,11 @@ recorder.addPCMListener((chunk) => {
 
 If RMS is always exactly 0 → the mic is muted or the route is broken. If RMS is very low but non-zero (0.001–0.01) → the mic is picking up but far from the source.
 
+Note: PCM listener fires on the raw pre-encode buffer, so a silent PCM stream and silent encoded segments are the same problem — not two different ones.
+
 ---
 
-## Segments are much smaller than expected
+## Segments are much shorter than expected
 
 **Symptom**: You configured `segmentDurationMs: 30_000` but segments are 3 KB / 200 ms.
 
@@ -172,10 +233,12 @@ recorder.addSegmentCompletedListener((s) => {
   console.log(
     'segment',
     s.index,
+    'filename:',
+    s.filename,
     'was_interrupted:',
     s.wasInterrupted,
     'reason:',
-    s.interruptionReason
+    s.interruptionReason,
   );
 });
 recorder.addInterruptionListener((e) => {
@@ -184,6 +247,37 @@ recorder.addInterruptionListener((e) => {
 ```
 
 If every segment has `wasInterrupted: true`, look at `reason` for the pattern. `focus` means audio focus is being taken repeatedly (OEM quirk or another audio app running). `route` means Bluetooth is flapping.
+
+---
+
+## HLS stream never appears in the player
+
+**Symptom**: Recording is running, segments are landing on disk, but the HLS URL your player points at returns 404 or the manifest is stuck at zero segments.
+
+**This has three independent failure modes.** Rule them out in order.
+
+**1. The sync agent is not attached.**  
+Recording writes local unconditionally. Streaming to R2 (or any object store) is a separate opt-in — you attach a sync agent that listens to `addSegmentCompletedListener` and `addManifestUpdatedListener` and PUTs each file. If you never attached one, nothing is going to R2.  
+**Verify**: log inside your `addSegmentCompletedListener` handler. If you see segment events but no PUT requests fire, the agent is not wired.
+
+**2. The backend endpoint that mints presigned URLs is failing.**  
+The sync agent asks your backend for a PUT URL, then PUTs the file. If the backend returns 500 or CORS blocks the presign call, no PUT ever happens.  
+**Verify**: watch your backend logs for `POST /hls-put-url` calls. Verify each returns a signed URL and correct object key (`<recordingId>/<filename>`). On the client, watch the network tab for the PUT itself — status, headers, response body.
+
+**3. R2 / custom domain routing is misconfigured.**  
+The PUT succeeds (200), but when the player fetches the manifest from your public HLS domain, it 404s or serves stale content. Common causes:
+
+- The public domain (e.g. `hls-streaming.example.com`) does not actually route to the R2 bucket
+- The R2 bucket policy blocks public reads
+- CORS on the R2 bucket rejects the player's origin (`GET`, `HEAD`, `Range` from your player's origin need to be allowed)
+- CDN caching serves the manifest at zero segments long after new ones landed — set `Cache-Control: no-cache` on `.m3u8`, longer TTLs on `.aac` are fine (segment files are immutable)
+
+**Verify**: `curl -I https://<your-hls-domain>/<recordingId>/manifest.m3u8`. If you get 404 but the object is in the bucket, it's a routing problem. If you get 200 but the body has only one `#EXTINF` and you know six segments have landed, it's a CDN cache issue.
+
+**The three keys to remember**:
+- **Object keys are `<recordingId>/<filename>`** — the sync agent uses the folder-per-recording layout as the object-key prefix.
+- **Manifest is rewritten after every segment**, so every `manifest.m3u8` PUT overwrites the previous one at the same key. That is the point.
+- **`stop()` seals the manifest with `#EXT-X-ENDLIST`** so players know it's VOD, not live. If the player is stuck showing "live" after stop, either `stop()` never completed on the client, or the final manifest PUT never landed.
 
 ---
 
@@ -205,7 +299,7 @@ It emits `"Auto-resume deferred — bring app to foreground to continue"` and st
 
 1. Confirm your `useRef` for the deferred flag actually persists (a fresh render creates a new ref if you use `useState` instead)
 2. Confirm `AppState.currentState === 'active'` when your listener fires — some apps get `'active'` events before they are fully foregrounded
-3. Add a 300–500ms delay before calling `resume()` — the OS needs time to complete the foreground handoff
+3. Add a 300–500 ms delay before calling `resume()` — the OS needs time to complete the foreground handoff
 
 ---
 
@@ -226,6 +320,8 @@ It emits `"Auto-resume deferred — bring app to foreground to continue"` and st
    The example uses `link:../` for the local package. In your own app, use the published version or set up proper linking.
 5. **You are using `expo-audio` or another audio library at the same time**  
    Two audio session managers will fight each other. Use one at a time.
+6. **You forgot to pass `recordingId`**  
+   In 2.0, `recordingId` is required and caller-owned — it's the folder name for the recording. Anvil validates it as a single path segment (no `/`, `\`, `..`, NUL, ≤256 chars). A missing or invalid id rejects at `createRecorder`.
 
 **Isolate**: Copy the _entire example App.tsx_ into your app as a single component and render it. If that works, the issue is in your integration code. If that fails too, the issue is your project setup (manifest, permissions, RN version).
 
@@ -236,7 +332,7 @@ It emits `"Auto-resume deferred — bring app to foreground to continue"` and st
 **iOS Simulator**:
 
 - ✅ Recording from host mic works
-- ✅ Segment writing and reading works
+- ✅ Segment writing, manifest sealing and discovery work
 - ⚠️ Interruption events don't fire naturally — you can trigger them with `Debug → Simulate Memory Warning` or by playing audio in another app, but the fidelity is poor
 - ❌ CallKit call detection doesn't work (there is no phone in a simulator)
 - ❌ Bluetooth route changes don't work
@@ -245,7 +341,7 @@ It emits `"Auto-resume deferred — bring app to foreground to continue"` and st
 **Android Emulator**:
 
 - ✅ Recording from host mic works (usually — some emulator configs deliver silence)
-- ✅ Segment writing and reading works
+- ✅ Segment writing, manifest sealing and discovery work
 - ⚠️ Audio focus events are unreliable — `AUDIOFOCUS_LOSS` might not fire when another emulator app takes the mic
 - ⚠️ `onRecordingConfigChanged` behaves inconsistently
 - ❌ Real phone calls don't exist; the emulator's "phone" control (extended controls → phone) doesn't fully mimic real call state transitions
@@ -290,21 +386,25 @@ recorder.addStorageWarningListener((w) =>
 recorder.addSegmentCompletedListener((s) =>
   console.log('[segment]', JSON.stringify(s))
 );
+recorder.addManifestUpdatedListener((m) =>
+  console.log('[manifest]', m.manifestPath, m.segmentCount)
+);
 recorder.addErrorListener((e) => console.log('[error]', e.code, e.message));
 ```
 
-Wire all six listeners during debugging. When something goes wrong, the JS log alone tells 70% of the story.
+Wire all seven listeners during debugging. When something goes wrong, the JS log alone tells 70% of the story.
 
 **When filing an issue**, include:
 
 1. The exact device (`Build.MODEL` on Android, `UIDevice.current.model` on iOS) and OS version
-2. Your `RecorderConfig` — literally the JSON you passed
+2. Your `RecorderConfig` — literally the JSON you passed, including `sampleRate` and `aacBitrate`
 3. The Anvil version from `package.json`
 4. The React Native version
 5. A logcat / Xcode Console snippet from 30 seconds before the issue to 5 seconds after
 6. What you were doing (started recording, received a call, backgrounded, etc.)
+7. For HLS-streaming issues: whether the sync agent was attached, backend endpoint URL, and a curl of the manifest from the public HLS domain
 
-Without these six items, the issue is almost impossible to reproduce.
+Without these seven items, the issue is almost impossible to reproduce.
 
 ---
 
@@ -312,6 +412,6 @@ Without these six items, the issue is almost impossible to reproduce.
 
 - Search existing issues on [the GitHub repo](https://github.com/Gautham495/react-native-nitro-audio-anvil/issues)
 - If your issue is OEM-specific, cross-reference with [dontkillmyapp.com](https://dontkillmyapp.com/) — sometimes their guide covers what you are hitting
-- File a new issue with the six items above and a **minimal reproduction** — a fork of the example app with your problem baked in, not just a description
+- File a new issue with the seven items above and a **minimal reproduction** — a fork of the example app with your problem baked in, not just a description
 
 The library is maintained by one person. Good repros get fixed. Vague reports sit in the backlog. Please respect that.

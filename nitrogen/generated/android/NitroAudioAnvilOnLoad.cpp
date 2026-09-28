@@ -25,6 +25,7 @@
 #include "JFunc_void_AnvilPermissionStatus.hpp"
 #include "JFunc_void_StorageWarningEvent.hpp"
 #include "JFunc_void_RecordingSegment.hpp"
+#include "JFunc_void_std__string.hpp"
 #include "JFunc_void_RecorderError.hpp"
 #include <NitroModules/DefaultConstructableObject.hpp>
 
@@ -60,6 +61,7 @@ void registerAllNatives() {
   margelo::nitro::audioanvil::JFunc_void_AnvilPermissionStatus_cxx::registerNatives();
   margelo::nitro::audioanvil::JFunc_void_StorageWarningEvent_cxx::registerNatives();
   margelo::nitro::audioanvil::JFunc_void_RecordingSegment_cxx::registerNatives();
+  margelo::nitro::audioanvil::JFunc_void_std__string_cxx::registerNatives();
   margelo::nitro::audioanvil::JFunc_void_RecorderError_cxx::registerNatives();
 
   // Register Nitro Hybrid Objects

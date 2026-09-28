@@ -18,8 +18,14 @@ public extension RecorderConfig {
   /**
    * Create a new instance of `RecorderConfig`.
    */
-  init(outputDirectory: String, segmentDurationMs: Double, fsyncIntervalMs: Double, sampleRate: Double, streamChunkMs: Double, speakerWindowMs: Double, speakerWindowHopMs: Double, onInterruption: InterruptionPolicy, keepAwakeInBackground: Bool, storageWarningBytes: Double, notification: NotificationConfig?) {
-    self.init(std.string(outputDirectory), segmentDurationMs, fsyncIntervalMs, sampleRate, streamChunkMs, speakerWindowMs, speakerWindowHopMs, onInterruption, keepAwakeInBackground, storageWarningBytes, { () -> bridge.std__optional_NotificationConfig_ in
+  init(outputDirectory: String, recordingId: String, resume: Bool?, segmentDurationMs: Double, fsyncIntervalMs: Double, sampleRate: Double, aacBitrate: Double, streamChunkMs: Double, speakerWindowMs: Double, speakerWindowHopMs: Double, onInterruption: InterruptionPolicy, keepAwakeInBackground: Bool, storageWarningBytes: Double, notification: NotificationConfig?) {
+    self.init(std.string(outputDirectory), std.string(recordingId), { () -> bridge.std__optional_bool_ in
+      if let __unwrappedValue = resume {
+        return bridge.create_std__optional_bool_(__unwrappedValue)
+      } else {
+        return .init()
+      }
+    }(), segmentDurationMs, fsyncIntervalMs, sampleRate, aacBitrate, streamChunkMs, speakerWindowMs, speakerWindowHopMs, onInterruption, keepAwakeInBackground, storageWarningBytes, { () -> bridge.std__optional_NotificationConfig_ in
       if let __unwrappedValue = notification {
         return bridge.create_std__optional_NotificationConfig_(__unwrappedValue)
       } else {
@@ -31,6 +37,23 @@ public extension RecorderConfig {
   @inline(__always)
   var outputDirectory: String {
     return String(self.__outputDirectory)
+  }
+  
+  @inline(__always)
+  var recordingId: String {
+    return String(self.__recordingId)
+  }
+  
+  @inline(__always)
+  var resume: Bool? {
+    return { () -> Bool? in
+      if bridge.has_value_std__optional_bool_(self.__resume) {
+        let __unwrapped = bridge.get_std__optional_bool_(self.__resume)
+        return __unwrapped
+      } else {
+        return nil
+      }
+    }()
   }
   
   @inline(__always)
@@ -46,6 +69,11 @@ public extension RecorderConfig {
   @inline(__always)
   var sampleRate: Double {
     return self.__sampleRate
+  }
+  
+  @inline(__always)
+  var aacBitrate: Double {
+    return self.__aacBitrate
   }
   
   @inline(__always)

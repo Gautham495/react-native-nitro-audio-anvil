@@ -23,6 +23,9 @@ data class RecordingSegment(
   val index: Double,
   @DoNotStrip
   @Keep
+  val filename: String,
+  @DoNotStrip
+  @Keep
   val filePath: String,
   @DoNotStrip
   @Keep
@@ -61,6 +64,7 @@ data class RecordingSegment(
     if (this === other) return true
     if (other !is RecordingSegment) return false
     return Objects.deepEquals(this.index, other.index)
+      && Objects.deepEquals(this.filename, other.filename)
       && Objects.deepEquals(this.filePath, other.filePath)
       && Objects.deepEquals(this.sampleRate, other.sampleRate)
       && Objects.deepEquals(this.durationMs, other.durationMs)
@@ -77,6 +81,7 @@ data class RecordingSegment(
   override fun hashCode(): Int {
     return arrayOf<Any?>(
       index,
+      filename,
       filePath,
       sampleRate,
       durationMs,
@@ -99,8 +104,8 @@ data class RecordingSegment(
     @Keep
     @Suppress("unused")
     @JvmStatic
-    private fun fromCpp(index: Double, filePath: String, sampleRate: Double, durationMs: Double, fileSize: Double, mediaStartMs: Double, startedAt: Double, endedAt: Double, wasInterrupted: Boolean, interruptionReason: AnvilInterruptionReason?, routeChanged: Boolean, sha256: String): RecordingSegment {
-      return RecordingSegment(index, filePath, sampleRate, durationMs, fileSize, mediaStartMs, startedAt, endedAt, wasInterrupted, interruptionReason, routeChanged, sha256)
+    private fun fromCpp(index: Double, filename: String, filePath: String, sampleRate: Double, durationMs: Double, fileSize: Double, mediaStartMs: Double, startedAt: Double, endedAt: Double, wasInterrupted: Boolean, interruptionReason: AnvilInterruptionReason?, routeChanged: Boolean, sha256: String): RecordingSegment {
+      return RecordingSegment(index, filename, filePath, sampleRate, durationMs, fileSize, mediaStartMs, startedAt, endedAt, wasInterrupted, interruptionReason, routeChanged, sha256)
     }
   }
 }

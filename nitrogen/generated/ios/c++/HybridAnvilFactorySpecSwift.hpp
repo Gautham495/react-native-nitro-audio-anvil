@@ -22,26 +22,32 @@ namespace margelo::nitro::audioanvil { enum class InterruptionPolicy; }
 namespace margelo::nitro::audioanvil { struct NotificationConfig; }
 // Forward declaration of `AnvilPermissionStatus` to properly resolve imports.
 namespace margelo::nitro::audioanvil { enum class AnvilPermissionStatus; }
-// Forward declaration of `OrphanedRecording` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct OrphanedRecording; }
+// Forward declaration of `RecoveredRecording` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct RecoveredRecording; }
 // Forward declaration of `RecordingSegment` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecordingSegment; }
 // Forward declaration of `AnvilInterruptionReason` to properly resolve imports.
 namespace margelo::nitro::audioanvil { enum class AnvilInterruptionReason; }
+// Forward declaration of `PendingUpload` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct PendingUpload; }
+// Forward declaration of `PendingUploadKind` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class PendingUploadKind; }
 
 #include <memory>
 #include "HybridAnvilRecorderSpec.hpp"
 #include <NitroModules/Promise.hpp>
 #include "RecorderConfig.hpp"
 #include <string>
+#include <optional>
 #include "InterruptionPolicy.hpp"
 #include "NotificationConfig.hpp"
-#include <optional>
 #include "AnvilPermissionStatus.hpp"
-#include "OrphanedRecording.hpp"
+#include "RecoveredRecording.hpp"
 #include <vector>
 #include "RecordingSegment.hpp"
 #include "AnvilInterruptionReason.hpp"
+#include "PendingUpload.hpp"
+#include "PendingUploadKind.hpp"
 
 #include "NitroAudioAnvil-Swift-Cxx-Umbrella.hpp"
 
@@ -117,16 +123,40 @@ namespace margelo::nitro::audioanvil {
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline std::shared_ptr<Promise<std::vector<OrphanedRecording>>> discoverOrphanedRecordings(const std::string& directory) override {
-      auto __result = _swiftPart.discoverOrphanedRecordings(directory);
+    inline std::shared_ptr<Promise<std::vector<RecoveredRecording>>> discoverOrphanedRecordings(const std::string& outputDirectory) override {
+      auto __result = _swiftPart.discoverOrphanedRecordings(outputDirectory);
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
       }
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline std::shared_ptr<Promise<RecordingSegment>> concatenate(const std::vector<std::string>& segmentPaths, const std::string& outputPath) override {
-      auto __result = _swiftPart.concatenate(segmentPaths, outputPath);
+    inline std::shared_ptr<Promise<RecordingSegment>> concatenate(const std::string& outputDirectory, const std::string& recordingId, const std::string& outputPath) override {
+      auto __result = _swiftPart.concatenate(outputDirectory, recordingId, outputPath);
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<bool>> deleteRecording(const std::string& outputDirectory, const std::string& recordingId) override {
+      auto __result = _swiftPart.deleteRecording(outputDirectory, recordingId);
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<std::vector<PendingUpload>>> retryPendingUploads(const std::string& outputDirectory) override {
+      auto __result = _swiftPart.retryPendingUploads(outputDirectory);
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> markSegmentUploaded(const std::string& outputDirectory, const std::string& recordingId, const std::string& filename) override {
+      auto __result = _swiftPart.markSegmentUploaded(outputDirectory, recordingId, filename);
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
       }

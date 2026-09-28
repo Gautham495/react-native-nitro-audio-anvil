@@ -178,15 +178,15 @@ open class HybridAnvilFactorySpec_cxx {
   }
   
   @inline(__always)
-  public final func discoverOrphanedRecordings(directory: std.string) -> bridge.Result_std__shared_ptr_Promise_std__vector_OrphanedRecording____ {
+  public final func discoverOrphanedRecordings(outputDirectory: std.string) -> bridge.Result_std__shared_ptr_Promise_std__vector_RecoveredRecording____ {
     do {
-      let __result = try self.__implementation.discoverOrphanedRecordings(directory: String(directory))
-      let __resultCpp = { () -> bridge.std__shared_ptr_Promise_std__vector_OrphanedRecording___ in
-        let __promise = bridge.create_std__shared_ptr_Promise_std__vector_OrphanedRecording___()
-        let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_std__vector_OrphanedRecording___(__promise)
+      let __result = try self.__implementation.discoverOrphanedRecordings(outputDirectory: String(outputDirectory))
+      let __resultCpp = { () -> bridge.std__shared_ptr_Promise_std__vector_RecoveredRecording___ in
+        let __promise = bridge.create_std__shared_ptr_Promise_std__vector_RecoveredRecording___()
+        let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_std__vector_RecoveredRecording___(__promise)
         __result
-          .then({ __result in __promiseHolder.resolve({ () -> bridge.std__vector_OrphanedRecording_ in
-              var __vector = bridge.create_std__vector_OrphanedRecording_(__result.count)
+          .then({ __result in __promiseHolder.resolve({ () -> bridge.std__vector_RecoveredRecording_ in
+              var __vector = bridge.create_std__vector_RecoveredRecording_(__result.count)
               for __item in __result {
                 __vector.push_back(__item)
               }
@@ -195,17 +195,17 @@ open class HybridAnvilFactorySpec_cxx {
           .catch({ __error in __promiseHolder.reject(__error.toCpp()) })
         return __promise
       }()
-      return bridge.create_Result_std__shared_ptr_Promise_std__vector_OrphanedRecording____(__resultCpp)
+      return bridge.create_Result_std__shared_ptr_Promise_std__vector_RecoveredRecording____(__resultCpp)
     } catch (let __error) {
       let __exceptionPtr = __error.toCpp()
-      return bridge.create_Result_std__shared_ptr_Promise_std__vector_OrphanedRecording____(__exceptionPtr)
+      return bridge.create_Result_std__shared_ptr_Promise_std__vector_RecoveredRecording____(__exceptionPtr)
     }
   }
   
   @inline(__always)
-  public final func concatenate(segmentPaths: bridge.std__vector_std__string_, outputPath: std.string) -> bridge.Result_std__shared_ptr_Promise_RecordingSegment___ {
+  public final func concatenate(outputDirectory: std.string, recordingId: std.string, outputPath: std.string) -> bridge.Result_std__shared_ptr_Promise_RecordingSegment___ {
     do {
-      let __result = try self.__implementation.concatenate(segmentPaths: segmentPaths.map({ __item in String(__item) }), outputPath: String(outputPath))
+      let __result = try self.__implementation.concatenate(outputDirectory: String(outputDirectory), recordingId: String(recordingId), outputPath: String(outputPath))
       let __resultCpp = { () -> bridge.std__shared_ptr_Promise_RecordingSegment__ in
         let __promise = bridge.create_std__shared_ptr_Promise_RecordingSegment__()
         let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_RecordingSegment__(__promise)
@@ -218,6 +218,69 @@ open class HybridAnvilFactorySpec_cxx {
     } catch (let __error) {
       let __exceptionPtr = __error.toCpp()
       return bridge.create_Result_std__shared_ptr_Promise_RecordingSegment___(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func deleteRecording(outputDirectory: std.string, recordingId: std.string) -> bridge.Result_std__shared_ptr_Promise_bool___ {
+    do {
+      let __result = try self.__implementation.deleteRecording(outputDirectory: String(outputDirectory), recordingId: String(recordingId))
+      let __resultCpp = { () -> bridge.std__shared_ptr_Promise_bool__ in
+        let __promise = bridge.create_std__shared_ptr_Promise_bool__()
+        let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_bool__(__promise)
+        __result
+          .then({ __result in __promiseHolder.resolve(__result) })
+          .catch({ __error in __promiseHolder.reject(__error.toCpp()) })
+        return __promise
+      }()
+      return bridge.create_Result_std__shared_ptr_Promise_bool___(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_std__shared_ptr_Promise_bool___(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func retryPendingUploads(outputDirectory: std.string) -> bridge.Result_std__shared_ptr_Promise_std__vector_PendingUpload____ {
+    do {
+      let __result = try self.__implementation.retryPendingUploads(outputDirectory: String(outputDirectory))
+      let __resultCpp = { () -> bridge.std__shared_ptr_Promise_std__vector_PendingUpload___ in
+        let __promise = bridge.create_std__shared_ptr_Promise_std__vector_PendingUpload___()
+        let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_std__vector_PendingUpload___(__promise)
+        __result
+          .then({ __result in __promiseHolder.resolve({ () -> bridge.std__vector_PendingUpload_ in
+              var __vector = bridge.create_std__vector_PendingUpload_(__result.count)
+              for __item in __result {
+                __vector.push_back(__item)
+              }
+              return __vector
+            }()) })
+          .catch({ __error in __promiseHolder.reject(__error.toCpp()) })
+        return __promise
+      }()
+      return bridge.create_Result_std__shared_ptr_Promise_std__vector_PendingUpload____(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_std__shared_ptr_Promise_std__vector_PendingUpload____(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func markSegmentUploaded(outputDirectory: std.string, recordingId: std.string, filename: std.string) -> bridge.Result_std__shared_ptr_Promise_void___ {
+    do {
+      let __result = try self.__implementation.markSegmentUploaded(outputDirectory: String(outputDirectory), recordingId: String(recordingId), filename: String(filename))
+      let __resultCpp = { () -> bridge.std__shared_ptr_Promise_void__ in
+        let __promise = bridge.create_std__shared_ptr_Promise_void__()
+        let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_void__(__promise)
+        __result
+          .then({ __result in __promiseHolder.resolve() })
+          .catch({ __error in __promiseHolder.reject(__error.toCpp()) })
+        return __promise
+      }()
+      return bridge.create_Result_std__shared_ptr_Promise_void___(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_std__shared_ptr_Promise_void___(__exceptionPtr)
     }
   }
 }

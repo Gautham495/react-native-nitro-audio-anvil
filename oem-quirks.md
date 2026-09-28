@@ -14,6 +14,8 @@ On aggressive OEMs (Xiaomi/HyperOS, Huawei/HarmonyOS, Oppo/ColorOS, Vivo/OriginO
 
 **You cannot fix this in code.** The setting lives in the user's device settings and must be flipped by the user. Every long-form recording app on Play Store faces this — some hide it, some warn, some ship an in-app modal. Ignoring it costs your users their recordings.
 
+This applies equally to the HLS-streaming path: if the foreground service dies, no more segments get written, no more `.aac` files land on disk, and the sync agent has nothing to push to R2. The OEM does not care what format you write in.
+
 The rest of this document is the per-brand recipe. Ship it as an in-app modal, a support-doc link, or an onboarding step. Pair it with [react-native-device-info](https://github.com/react-native-device-info/react-native-device-info) to detect the brand and only show the relevant instructions.
 
 ---
@@ -286,14 +288,14 @@ function detectBrand(combined: string) {
 Then either:
 
 - Show an in-app modal on first launch that walks the user through their brand's steps
-- Trigger the modal after the first "Auto-resume failed after N attempts" error, since aggressive OEMs are exactly where auto-resume fails
+- Trigger the modal after the first `Auto-resume failed after N attempts` error, since aggressive OEMs are exactly where auto-resume fails
 - Add a "Recording reliability" section in your settings screen so the user can re-check
 
 ---
 
 ## The pragmatic ship
 
-Do not try to detect brand-specific setting completion — the OEMs make that impossible on purpose. Show the modal, link to [dontkillmyapp.com/&lt;brand&gt;](https://dontkillmyapp.com/) for the deep-dive version they can revisit, and provide an "I've done this" button that dismisses the modal. Track that dismissal in your analytics — reps who complete the setup have 99%+ reliability, reps who don't will file support tickets you can pattern-match.
+Do not try to detect brand-specific setting completion — the OEMs make that impossible on purpose. Show the modal, link to [dontkillmyapp.com/&lt;brand&gt;](https://dontkillmyapp.com/) for the deep-dive version they can revisit, and provide an "I've done this" button that dismisses the modal. Track that dismissal in your analytics — users who complete the setup have 99%+ reliability, users who don't will file support tickets you can pattern-match.
 
 **This is not perfect, and it will not be.** The OEM overlay landscape churns every 6 months, dontkillmyapp.com stays roughly current, and you will still get support tickets from HyperOS 3.1 users after a system update reset their settings. That is the cost of shipping on Android. iOS trades this for its own set of problems (background reactivation permanent-fail bug, CarPlay routing chaos). Both are ok. Neither is fixable at the library layer.
 

@@ -2,487 +2,505 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Platform,
+  SafeAreaView,
   ScrollView,
+  Share,
   StatusBar,
   StyleSheet,
   Text,
-  View,
-  AppState,
 } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 
 import {
   Anvil,
-  type AnvilRecorder,
   type AnvilListenerSubscription,
-  type AnvilPermissionStatus,
-  type RecorderConfig,
+  type AnvilRecorder,
+  type PCMChunk,
   type RecorderState,
   type RecordingSegment,
+  type RecoveredRecording,
+  type SpeakerWindow,
 } from 'react-native-nitro-audio-anvil';
 
-import Share from 'react-native-share';
-
+import { Card, Row } from './ui/Card';
+import { Button, ButtonRow } from './ui/Button';
+import { LevelMeter } from './ui/LevelMeter';
+import { EventLog } from './EventLog';
+import { RecordingsList } from './RecordingsList';
+import { RecoveryCard } from './RecoveryCard';
+import { UploadCard, type UploadTarget } from './UploadCard';
+import {
+  attachHlsSync,
+  drainPendingUploads,
+  type HlsSyncEvent,
+} from './hlsSyncAgent';
 import {
   OUTPUT_DIRECTORY,
   ensureOutputDirectory,
+  makeRecordingId,
   recorderService,
-} from './helpers/recorderService';
+} from './recorderService';
+import { basename, colors, formatBytes, formatClock, spacing } from './theme';
 
-import { playTrack, toFileUrl } from './helpers/playerBridge';
-
-import { Card, Row } from './helpers/ui/Card';
-
-import { Button, ButtonRow } from './helpers/ui/Button';
-
-import { LevelMeter } from './helpers/ui/LevelMeter';
-
-import { PlayerCard } from './helpers/PlayerCard';
-
-import { UploadCard, type UploadTarget } from './helpers/UploadCard';
-
-import { RecordingsList } from './helpers/RecordingsList';
-
-import { EventLog } from './helpers/EventLog';
-
-import {
-  basename,
-  colors,
-  formatBytes,
-  formatClock,
-  spacing,
-} from './helpers/theme';
-
-const RECORDER_CONFIG: RecorderConfig = {
-  outputDirectory: OUTPUT_DIRECTORY,
-  segmentDurationMs: 30_000,
+const CONFIG = {
+  segmentDurationMs: 3000,
   fsyncIntervalMs: 500,
-  sampleRate: 16000,
+  sampleRate: 48000,
+  aacBitrate: 96000,
   streamChunkMs: 100,
   speakerWindowMs: 1500,
   speakerWindowHopMs: 750,
-  onInterruption: 'resume',
+  onInterruption: 'resume' as const,
   keepAwakeInBackground: true,
-  storageWarningBytes: 200 * 1024 * 1024,
-  notification: { title: 'Recording', text: 'Anvil is capturing audio' },
-};
-
-const STATE_COLOR: Record<RecorderState, string> = {
-  idle: colors.muted,
-  recording: colors.record,
-  paused: colors.warn,
-  interrupted: colors.warn,
-  stopped: colors.muted,
+  storageWarningBytes: 100 * 1024 * 1024,
+  notification: {
+    title: 'Recording',
+    text: 'Anvil is capturing audio',
+  },
 };
 
 export default function App() {
-  const [permission, setPermission] =
-    useState<AnvilPermissionStatus>('undetermined');
-  const [state, setState] = useState<RecorderState>('idle');
+  const [permission, setPermission] = useState<string>('undetermined');
+  const [recordingState, setRecordingState] = useState<RecorderState>('idle');
+  const [recordingId, setRecordingId] = useState<string | null>(null);
   const [durationMs, setDurationMs] = useState(0);
-  const [segmentPath, setSegmentPath] = useState('');
-  const [pcmCount, setPcmCount] = useState(0);
-  const [pcmBytes, setPcmBytes] = useState(0);
-  const [windowCount, setWindowCount] = useState(0);
   const [rms, setRms] = useState(0);
   const [segments, setSegments] = useState<RecordingSegment[]>([]);
   const [fullFile, setFullFile] = useState<RecordingSegment | null>(null);
+  const [hlsUrl, setHlsUrl] = useState<string | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [uploadTarget, setUploadTarget] = useState<UploadTarget | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [log, setLog] = useState<string[]>([]);
+  const [orphans, setOrphans] = useState<RecoveredRecording[]>([]);
+  const [eventLines, setEventLines] = useState<string[]>([]);
 
-  const resumeDeferredRef = useRef(false);
-  const recorderRef = useRef<AnvilRecorder | null>(null);
+  const listenerSubs = useRef<AnvilListenerSubscription[]>([]);
+  const detachSync = useRef<(() => void) | null>(null);
+  const pcmSequence = useRef(0);
 
-  const subscriptions = useRef<AnvilListenerSubscription[]>([]);
-  const lastSequence = useRef(-1);
-
-  const addLog = useCallback((line: string) => {
-    const stamp = new Date().toISOString().slice(11, 19);
-    setLog((previous) => [`${stamp}  ${line}`, ...previous].slice(0, 80));
+  const log = useCallback((line: string) => {
+    setEventLines((prev) =>
+      [`${formatClock(Date.now() % 86400000)} ${line}`, ...prev].slice(0, 40)
+    );
   }, []);
 
-  // ---- stitching -------------------------------------------------------------------------------
-
-  const buildFullFile = useCallback(
-    async (parts: RecordingSegment[], name: string) => {
-      if (parts.length === 0) return null;
-      const outputPath = `${OUTPUT_DIRECTORY}/${name}-full.wav`;
-      const stitched = await Anvil.concatenate(
-        parts.map((segment) => segment.filePath),
-        outputPath
-      );
-      setFullFile(stitched);
-      setUploadTarget({
-        path: stitched.filePath,
-        sizeBytes: stitched.fileSize,
-        durationMs: stitched.durationMs,
-      });
-      addLog(
-        `full file ${basename(stitched.filePath)} ${formatClock(stitched.durationMs)} ${formatBytes(stitched.fileSize)}`
-      );
-      return stitched;
+  const copyToClipboard = useCallback(
+    (value: string, label: string) => {
+      Clipboard.setString(value);
+      log(`copied ${label} to clipboard`);
     },
-    [addLog]
+    [log]
   );
 
-  // ---- recovery --------------------------------------------------------------------------------
-
-  const runRecovery = useCallback(async () => {
-    try {
-      let found = 0;
-      await recorderService.recoverPendingRecordings(async (recording) => {
-        found++;
-        addLog(
-          `RECOVERED ${recording.logicalId}: ${recording.sessions.length} session(s), ${recording.segments.length} segment(s), ${formatClock(recording.totalDurationMs)}`
-        );
-        setSegments(recording.segments);
-        await buildFullFile(recording.segments, recording.logicalId);
-      });
-      if (found === 0) addLog('recovery: nothing pending');
-    } catch (error) {
-      addLog(`recovery failed: ${String(error)}`);
-    }
-  }, [addLog, buildFullFile]);
-
-  useEffect(() => {
-    (async () => {
-      await ensureOutputDirectory();
-      setPermission(Anvil.getPermissionStatus());
-      await runRecovery();
-    })();
-  }, [runRecovery]);
-
-  // ---- live snapshot ---------------------------------------------------------------------------
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const recorder = recorderService.active;
-      if (!recorder) return;
-
-      recorderRef.current = recorder;
-
-      setState(recorder.state);
-      setDurationMs(recorder.totalDurationMs);
-      setSegmentPath(recorder.currentSegmentPath);
-    }, 200);
-    return () => clearInterval(interval);
+  const teardownRecorder = useCallback(() => {
+    detachSync.current?.();
+    detachSync.current = null;
+    setIsStreaming(false);
+    for (const sub of listenerSubs.current) sub.remove();
+    listenerSubs.current = [];
   }, []);
 
-  // AppState listener — reacts to foreground transitions:
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', async (nextState) => {
-      if (nextState !== 'active') return;
-      if (!resumeDeferredRef.current) return;
-      if (!recorderRef.current) return;
-
-      console.log(
-        '[example] app came foreground with deferred resume — retrying'
-      );
-      resumeDeferredRef.current = false;
-
-      // Small delay to let the OS complete the foreground handoff before
-      // trying to acquire the mic session.
-      await new Promise((r) => setTimeout(() => r, 300));
-
-      try {
-        await recorderRef.current.resume();
-        console.log('[example] deferred resume succeeded');
-      } catch (err: any) {
-        console.log('[example] deferred resume failed:', err?.message);
-      }
-    });
-
-    return () => sub.remove();
-  }, []);
-
-  // ---- listeners -------------------------------------------------------------------------------
-
-  const wireListeners = useCallback(
+  const attachRecorderListeners = useCallback(
     (recorder: AnvilRecorder) => {
-      subscriptions.current.forEach((s) => s.remove());
-      lastSequence.current = -1;
-      subscriptions.current = [
-        // Stream 1 — PCM chunks. Forward `chunk.buffer` to your streaming speech-to-text socket.
-        recorder.addPCMListener((chunk) => {
-          setPcmCount((n) => n + 1);
-          setPcmBytes((n) => n + chunk.buffer.byteLength);
-          if (
-            lastSequence.current >= 0 &&
-            chunk.sequenceNumber !== lastSequence.current + 1
-          ) {
-            addLog(
-              `PCM GAP expected ${lastSequence.current + 1} got ${chunk.sequenceNumber}`
+      // Recording-side listeners only — no HLS sync here. Streaming is a
+      // separate toggle so the user can record locally without pushing to R2.
+      for (const sub of listenerSubs.current) sub.remove();
+      listenerSubs.current = [
+        recorder.addPCMListener((chunk: PCMChunk) => {
+          if (chunk.sequenceNumber !== pcmSequence.current) {
+            log(
+              `pcm gap: expected ${pcmSequence.current} got ${chunk.sequenceNumber}`
             );
+            pcmSequence.current = chunk.sequenceNumber;
           }
-          lastSequence.current = chunk.sequenceNumber;
+          pcmSequence.current += 1;
         }),
-        // Stream 2 — speaker windows. Send `window.buffer` to your speaker-embedding model.
-        recorder.addSpeakerWindowListener((window) => {
-          setWindowCount((n) => n + 1);
+        recorder.addSpeakerWindowListener((window: SpeakerWindow) => {
           setRms(window.rms);
         }),
+        recorder.addSegmentCompletedListener((segment) => {
+          setSegments((prev) => [...prev, segment]);
+          setDurationMs(recorder.totalDurationMs);
+          log(
+            `segment ${segment.filename} · ${formatClock(segment.durationMs)}`
+          );
+        }),
+        recorder.addManifestUpdatedListener((path) => {
+          log(`manifest ${basename(path)} rewritten`);
+        }),
         recorder.addInterruptionListener((event) => {
-          addLog(
-            `INTERRUPTION ${event.phase} ${event.reason} resume=${event.shouldResume}` +
-              (event.segmentPath ? ` → ${basename(event.segmentPath)}` : '')
+          log(
+            `interruption ${event.phase} · ${event.reason} · resume=${event.shouldResume}`
           );
         }),
         recorder.addRouteChangeListener((event) => {
-          addLog(
-            `ROUTE ${event.reason} "${event.inputName}" changed=${event.inputChanged}`
-          );
-        }),
-        recorder.addPermissionChangeListener((status) => {
-          setPermission(status);
-          addLog(`PERMISSION → ${status}`);
+          log(`route ${event.reason} → ${event.inputName || '?'}`);
         }),
         recorder.addStorageWarningListener((event) => {
-          addLog(
-            `STORAGE ${formatBytes(event.freeBytes)} free < ${formatBytes(event.thresholdBytes)}`
-          );
-        }),
-        recorder.addSegmentCompletedListener((segment) => {
-          setSegments((previous) => [
-            ...previous.filter((s) => s.filePath !== segment.filePath),
-            segment,
-          ]);
-          addLog(
-            `SEGMENT #${segment.index} ${formatClock(segment.durationMs)} ${formatBytes(segment.fileSize)}` +
-              (segment.wasInterrupted
-                ? ` ⚡${segment.interruptionReason ?? ''}`
-                : '') +
-              (segment.routeChanged ? ' 🎧' : '')
-          );
+          log(`storage warn: ${formatBytes(event.freeBytes)} free`);
         }),
         recorder.addErrorListener((error) => {
-          addLog(`ERROR [${error.code}] ${error.message}`);
-
-          if (
-            error.message?.includes('Auto-resume deferred') ||
-            error.message?.includes('Auto-resume abandoned')
-          ) {
-            resumeDeferredRef.current = true;
-            console.log(
-              '[example] deferred resume flagged, waiting for foreground'
-            );
-          }
+          log(`error [${error.code}] ${error.message}`);
         }),
       ];
     },
-    [addLog]
+    [log]
   );
 
-  // ---- controls --------------------------------------------------------------------------------
+  // Initial load: permission + directory + recovery scan + retry queue.
+  useEffect(() => {
+    (async () => {
+      await ensureOutputDirectory();
+      const status = await Anvil.getPermissionStatus();
+      setPermission(status);
+      log(`init: permission=${status} dir=${OUTPUT_DIRECTORY}`);
+
+      const found = await recorderService.recoverPending();
+      setOrphans(found);
+      if (found.length > 0) {
+        log(`recovery: ${found.length} unsealed folder(s)`);
+      }
+
+      await drainPendingUploads((event) => reportSyncEvent(event, log));
+    })().catch((error) => log(`init failed: ${String(error)}`));
+
+    return () => {
+      teardownRecorder();
+    };
+  }, [log, teardownRecorder]);
+
+  // Duration + state poll while recording. Owns its own interval.
+  useEffect(() => {
+    if (recordingState !== 'recording' && recordingState !== 'paused') return;
+    const tick = setInterval(() => {
+      const recorder = recorderService.active;
+      if (!recorder) return;
+      setDurationMs(recorder.totalDurationMs);
+      setRecordingState(recorder.state);
+    }, 500);
+    return () => clearInterval(tick);
+  }, [recordingState]);
 
   const requestPermission = useCallback(async () => {
     const status = await Anvil.requestPermission();
     setPermission(status);
-    addLog(`permission ${status}`);
-  }, [addLog]);
+    log(`requestPermission → ${status}`);
+  }, [log]);
 
-  const record = useCallback(async () => {
-    setBusy(true);
+  const startRecording = useCallback(async () => {
     try {
-      setPcmCount(0);
-      setPcmBytes(0);
-      setWindowCount(0);
-      setRms(0);
+      const id = makeRecordingId();
+      setRecordingId(id);
       setSegments([]);
       setFullFile(null);
+      setHlsUrl(null);
       setUploadTarget(null);
+      pcmSequence.current = 0;
+      log(`start recording → ${id}`);
+
       const recorder = await recorderService.begin({
-        logicalId: `recording-${Date.now()}`,
-        config: RECORDER_CONFIG,
+        recordingId: id,
+        config: CONFIG,
       });
-      wireListeners(recorder);
-      setState('recording');
-      addLog(`session ${recorder.sessionId}`);
+      attachRecorderListeners(recorder);
+      setRecordingState('recording');
     } catch (error) {
-      addLog(`start failed: ${String(error)}`);
-      Alert.alert('Could not start', String(error));
-    } finally {
-      setBusy(false);
+      log(`start failed: ${String(error)}`);
+      Alert.alert('Start failed', String(error));
     }
-  }, [wireListeners, addLog]);
+  }, [attachRecorderListeners, log]);
 
-  const pause = useCallback(async () => {
-    await recorderService.active
-      ?.pause()
-      .catch((error) => addLog(`pause failed: ${String(error)}`));
-    setState('paused');
-  }, [addLog]);
-
-  const resume = useCallback(async () => {
-    await recorderService.active
-      ?.resume()
-      .catch((error) => addLog(`resume failed: ${String(error)}`));
-    setState('recording');
-  }, [addLog]);
-
-  const rotate = useCallback(async () => {
+  const stopRecording = useCallback(async () => {
     try {
-      const segment = await recorderService.active?.rotateSegment();
-      if (segment) addLog(`rotated → #${segment.index}`);
+      log('stop recording');
+      const finalSegments = await recorderService.end();
+      teardownRecorder();
+      setSegments(finalSegments);
+      setRecordingState('stopped');
+      setDurationMs(finalSegments.reduce((acc, s) => acc + s.durationMs, 0));
+      log(`stopped · ${finalSegments.length} segments`);
     } catch (error) {
-      addLog(`rotate failed: ${String(error)}`);
+      log(`stop failed: ${String(error)}`);
     }
-  }, [addLog]);
+  }, [log, teardownRecorder]);
 
-  const stop = useCallback(async () => {
-    setBusy(true);
-    const logicalId =
-      recorderService.activeLogicalId ?? `recording-${Date.now()}`;
+  const pauseOrResume = useCallback(async () => {
+    const recorder = recorderService.active;
+    if (!recorder) return;
     try {
-      const finished = await recorderService.end();
-      subscriptions.current.forEach((s) => s.remove());
-      subscriptions.current = [];
-      setState('stopped');
-      setSegmentPath('');
-      setRms(0);
-      setSegments(finished);
-      addLog(
-        `stopped: ${finished.length} segment(s), ${formatClock(finished.reduce((sum, s) => sum + s.durationMs, 0))}`
+      if (recorder.state === 'recording') {
+        await recorder.pause();
+        log('paused');
+      } else {
+        await recorder.resume();
+        log('resumed');
+      }
+      setRecordingState(recorder.state);
+    } catch (error) {
+      log(`pause/resume failed: ${String(error)}`);
+    }
+  }, [log]);
+
+  // Streaming toggle — attaches the HLS sync agent to the active recorder.
+  // Can be turned on at any point during a recording; when off, segments are
+  // still written to disk but nothing goes to the bucket.
+  const startStreaming = useCallback(() => {
+    const recorder = recorderService.active;
+    if (!recorder) {
+      Alert.alert('Not recording', 'Start a recording first.');
+      return;
+    }
+    if (detachSync.current) return;
+    log(`start streaming to R2 → recording ${recorder.recordingId}`);
+    detachSync.current = attachHlsSync(recorder, (event) => {
+      reportSyncEvent(event, log);
+      if (event.kind === 'manifest' && event.url) {
+        setHlsUrl(event.url);
+      }
+    });
+    setIsStreaming(true);
+  }, [log]);
+
+  const stopStreaming = useCallback(() => {
+    if (!detachSync.current) return;
+    log('stop streaming to R2');
+    detachSync.current();
+    detachSync.current = null;
+    setIsStreaming(false);
+  }, [log]);
+
+  const concatenate = useCallback(async () => {
+    if (!recordingId) return;
+    try {
+      const outputPath = `${OUTPUT_DIRECTORY}/${recordingId}.aac`;
+      log(`concatenating → ${basename(outputPath)}`);
+      const result = await recorderService.concatenate(recordingId, outputPath);
+      setFullFile(result);
+      setUploadTarget({
+        path: result.filePath,
+        sizeBytes: result.fileSize,
+        durationMs: result.durationMs,
+      });
+      log(
+        `concatenated: ${formatBytes(result.fileSize)} · ${formatClock(result.durationMs)}`
       );
-      await buildFullFile(finished, logicalId);
     } catch (error) {
-      addLog(`stop failed: ${String(error)}`);
-    } finally {
-      setBusy(false);
+      log(`concatenate failed: ${String(error)}`);
     }
-  }, [addLog, buildFullFile]);
+  }, [recordingId, log]);
 
-  const playSegment = useCallback(
-    async (segment: RecordingSegment, title: string) => {
+  const discardCurrent = useCallback(async () => {
+    if (!recordingId) return;
+    try {
+      const removed = await recorderService.deleteRecording(recordingId);
+      log(`delete ${recordingId} → ${removed}`);
+      setRecordingId(null);
+      setSegments([]);
+      setFullFile(null);
+      setHlsUrl(null);
+      setUploadTarget(null);
+      setRecordingState('idle');
+    } catch (error) {
+      log(`delete failed: ${String(error)}`);
+    }
+  }, [recordingId, log]);
+
+  // Recovery flow: three verbs, all self-contained.
+  const resumeOrphan = useCallback(
+    async (orphan: RecoveredRecording) => {
       try {
-        await playTrack({
-          id: segment.filePath,
-          title,
-          url: toFileUrl(segment.filePath),
-          durationSec: segment.durationMs / 1000,
+        log(`resume orphan → ${orphan.recordingId}`);
+        pcmSequence.current = 0;
+        const recorder = await recorderService.begin({
+          recordingId: orphan.recordingId,
+          config: { ...CONFIG, resume: true },
         });
+        attachRecorderListeners(recorder);
+        setRecordingId(orphan.recordingId);
+        setSegments(orphan.segments);
+        setDurationMs(orphan.totalDurationMs);
+        setFullFile(null);
+        setHlsUrl(null);
+        setUploadTarget(null);
+        setOrphans((prev) =>
+          prev.filter((o) => o.recordingId !== orphan.recordingId)
+        );
+        setRecordingState('recording');
       } catch (error) {
-        addLog(`play failed: ${String(error)}`);
+        log(`resume failed: ${String(error)}`);
+        Alert.alert('Resume failed', String(error));
       }
     },
-    [addLog]
+    [attachRecorderListeners, log]
   );
 
-  const playRemote = useCallback(
-    async (url: string) => {
-      addLog(`play uploaded: ${url}`);
+  const finalizeOrphan = useCallback(
+    async (orphan: RecoveredRecording) => {
       try {
-        await playTrack({
-          id: url,
-          title: 'Uploaded recording',
-          url,
-          durationSec: (fullFile?.durationMs ?? 0) / 1000,
+        const outputPath = `${OUTPUT_DIRECTORY}/${orphan.recordingId}.aac`;
+        log(`finalize orphan → ${basename(outputPath)}`);
+        const result = await recorderService.concatenate(
+          orphan.recordingId,
+          outputPath
+        );
+        setRecordingId(orphan.recordingId);
+        setSegments(orphan.segments);
+        setFullFile(result);
+        setUploadTarget({
+          path: result.filePath,
+          sizeBytes: result.fileSize,
+          durationMs: result.durationMs,
         });
+        setDurationMs(result.durationMs);
+        setRecordingState('stopped');
+        setOrphans((prev) =>
+          prev.filter((o) => o.recordingId !== orphan.recordingId)
+        );
+        log(
+          `finalized: ${formatBytes(result.fileSize)} · ${formatClock(result.durationMs)}`
+        );
       } catch (error) {
-        addLog(`remote play failed: ${String(error)}`);
+        log(`finalize failed: ${String(error)}`);
+        Alert.alert('Finalize failed', String(error));
       }
     },
-    [addLog, fullFile]
+    [log]
+  );
+
+  const discardOrphan = useCallback(
+    async (orphan: RecoveredRecording) => {
+      try {
+        const removed = await recorderService.deleteRecording(
+          orphan.recordingId
+        );
+        log(`discard orphan ${orphan.recordingId} → ${removed}`);
+        setOrphans((prev) =>
+          prev.filter((o) => o.recordingId !== orphan.recordingId)
+        );
+      } catch (error) {
+        log(`discard orphan failed: ${String(error)}`);
+      }
+    },
+    [log]
   );
 
   const shareFile = useCallback(
     async (segment: RecordingSegment) => {
       try {
-        await Share.open({
-          url: `file://${segment.filePath}`,
-          type: 'audio/wav',
-          filename: basename(segment.filePath),
-          saveToFiles: Platform.OS === 'ios',
-        });
-        addLog(`shared ${basename(segment.filePath)}`);
+        const uri = segment.filePath.startsWith('file://')
+          ? segment.filePath
+          : `file://${segment.filePath}`;
+        await Share.share({ url: uri, message: segment.filename });
       } catch (error) {
-        if (String(error).includes('cancelled')) return;
-        addLog(`share failed: ${String(error)}`);
+        log(`share failed: ${String(error)}`);
       }
     },
-    [addLog]
+    [log]
   );
 
-  const recording = state === 'recording';
-  const active =
-    recorderService.active !== null && state !== 'stopped' && state !== 'idle';
+  const canStream =
+    recordingState === 'recording' || recordingState === 'paused';
 
   return (
-    <View style={styles.safe}>
+    <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.brand}>ANVIL</Text>
-          <Text style={styles.subtitle}>
-            corruption-proof recording ·{' '}
-            {Platform.OS === 'android' ? 'Android' : 'iOS'}
-          </Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <Text style={styles.title}>Anvil 2.0</Text>
+        <Text style={styles.subtitle}>
+          HLS-native recorder · stream to R2 · live listen anywhere
+        </Text>
 
-        <Card title="Recorder" badge={permission}>
-          <View style={styles.timerRow}>
-            <View
-              style={[styles.dot, { backgroundColor: STATE_COLOR[state] }]}
-            />
-            <Text style={styles.timer}>{formatClock(durationMs)}</Text>
-            <Text style={[styles.stateLabel, { color: STATE_COLOR[state] }]}>
-              {state}
-            </Text>
-          </View>
-          <LevelMeter rms={rms} active={recording} />
-          <Row label="Segment" value={basename(segmentPath) || '—'} mono />
+        <RecoveryCard
+          orphans={orphans}
+          onResume={resumeOrphan}
+          onFinalize={finalizeOrphan}
+          onDiscard={discardOrphan}
+        />
+
+        <Card title="Recorder" badge={recordingState}>
+          <Row label="permission" value={permission} />
+          <Row label="recording id" value={recordingId ?? '—'} mono />
+          <Row label="duration" value={formatClock(durationMs)} mono />
+          <Row label="segments" value={`${segments.length}`} mono />
           <Row
-            label="PCM stream"
-            value={`${pcmCount} chunks · ${formatBytes(pcmBytes)}`}
+            label="streaming"
+            value={isStreaming ? 'live to R2' : 'off'}
             mono
           />
-          <Row
-            label="Speaker windows"
-            value={`${windowCount} · rms ${rms.toFixed(3)}`}
-            mono
-          />
-
-          {permission !== 'granted' ? (
-            <Button
-              title="Allow microphone"
-              variant="record"
-              onPress={requestPermission}
-            />
-          ) : !active ? (
-            <Button
-              title="● Record"
-              variant="record"
-              onPress={record}
-              disabled={busy}
-            />
-          ) : (
-            <>
-              <ButtonRow>
-                {recording ? (
-                  <Button title="Pause" variant="neutral" onPress={pause} />
-                ) : (
-                  <Button title="Resume" variant="neutral" onPress={resume} />
-                )}
-                <Button
-                  title="Rotate"
-                  variant="neutral"
-                  onPress={rotate}
-                  disabled={!recording}
-                />
-              </ButtonRow>
+          <LevelMeter rms={rms} active={recordingState === 'recording'} />
+          <ButtonRow>
+            {permission !== 'granted' ? (
               <Button
-                title="■ Stop"
-                variant="danger"
-                onPress={stop}
-                disabled={busy}
+                title="Grant mic"
+                variant="record"
+                onPress={requestPermission}
               />
-            </>
-          )}
+            ) : recordingState === 'idle' || recordingState === 'stopped' ? (
+              <Button
+                title="Record"
+                variant="record"
+                onPress={startRecording}
+              />
+            ) : (
+              <>
+                <Button
+                  title={recordingState === 'recording' ? 'Pause' : 'Resume'}
+                  variant="neutral"
+                  onPress={pauseOrResume}
+                />
+                <Button title="Stop" variant="danger" onPress={stopRecording} />
+              </>
+            )}
+          </ButtonRow>
+          {canStream ? (
+            <ButtonRow>
+              {isStreaming ? (
+                <Button
+                  title="Stop streaming"
+                  variant="danger"
+                  onPress={stopStreaming}
+                />
+              ) : (
+                <Button
+                  title="Start streaming to R2"
+                  variant="upload"
+                  onPress={startStreaming}
+                />
+              )}
+            </ButtonRow>
+          ) : null}
+          {recordingId ? (
+            <ButtonRow>
+              <Button
+                title="Copy recording id"
+                variant="ghost"
+                onPress={() =>
+                  copyToClipboard(recordingId, `recording id ${recordingId}`)
+                }
+              />
+            </ButtonRow>
+          ) : null}
+          {recordingState === 'stopped' && recordingId ? (
+            <ButtonRow>
+              <Button
+                title="Concatenate → archive"
+                variant="upload"
+                onPress={concatenate}
+              />
+              <Button
+                title="Discard folder"
+                variant="danger"
+                onPress={discardCurrent}
+              />
+            </ButtonRow>
+          ) : null}
         </Card>
 
         <RecordingsList
           fullFile={fullFile}
           segments={segments}
-          onPlay={playSegment}
+          hlsUrl={hlsUrl}
+          onPlayLocal={() => {}}
+          onCopyHlsUrl={(url) => copyToClipboard(url, 'HLS URL')}
           onShare={shareFile}
           onUploadTarget={(segment) =>
             setUploadTarget({
@@ -493,71 +511,41 @@ export default function App() {
           }
         />
 
-        <PlayerCard />
-
         <UploadCard
           target={uploadTarget}
-          onUploaded={() => {}}
-          onPlayRemote={playRemote}
-          log={addLog}
+          onUploaded={(url) => {
+            log(`archive URL: ${url}`);
+            copyToClipboard(url, 'archive URL');
+          }}
+          log={log}
         />
 
-        <Card title="Tools">
-          <ButtonRow>
-            <Button
-              title="Run recovery"
-              variant="ghost"
-              onPress={runRecovery}
-            />
-            <Button
-              title="Simulate crash"
-              variant="ghost"
-              onPress={() => {
-                addLog(
-                  'crashing in 1 s — reopen and watch RECOVERED (release builds; dev shows a redbox)'
-                );
-                setTimeout(() => {
-                  throw new Error('Anvil crash test');
-                }, 1000);
-              }}
-            />
-          </ButtonRow>
-        </Card>
-
-        <EventLog lines={log} />
+        <EventLog lines={eventLines} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
+function reportSyncEvent(event: HlsSyncEvent, log: (line: string) => void) {
+  if (event.error) {
+    log(`sync ${event.kind} ${event.filename} failed: ${event.error}`);
+  } else {
+    log(`sync ${event.kind} ${event.filename} → ${event.url ?? 'ok'}`);
+  }
+}
+
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background, paddingTop: 60 },
-  content: {
+  safe: { flex: 1, backgroundColor: colors.background },
+  scroll: {
     padding: spacing.lg,
-    gap: spacing.md,
-    paddingBottom: spacing.xl * 2,
+    gap: spacing.lg,
+    paddingBottom: Platform.select({ ios: 40, default: 24 }),
   },
-  header: { paddingVertical: spacing.sm, gap: 2 },
-  brand: {
+  title: {
     color: colors.text,
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
-    letterSpacing: 6,
+    letterSpacing: 0.5,
   },
-  subtitle: { color: colors.muted, fontSize: 13 },
-  timerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  dot: { width: 10, height: 10, borderRadius: 5 },
-  timer: {
-    color: colors.text,
-    fontSize: 40,
-    fontWeight: '300',
-    fontVariant: ['tabular-nums'],
-    flex: 1,
-  },
-  stateLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
+  subtitle: { color: colors.muted, fontSize: 13, marginTop: -spacing.md },
 });

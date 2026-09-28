@@ -29,7 +29,15 @@ abstract class HybridAnvilRecorderSpec: HybridObject() {
   // Properties
   @get:DoNotStrip
   @get:Keep
-  abstract val sessionId: String
+  abstract val recordingId: String
+  
+  @get:DoNotStrip
+  @get:Keep
+  abstract val folderPath: String
+  
+  @get:DoNotStrip
+  @get:Keep
+  abstract val manifestPath: String
   
   @get:DoNotStrip
   @get:Keep
@@ -66,7 +74,7 @@ abstract class HybridAnvilRecorderSpec: HybridObject() {
   
   @DoNotStrip
   @Keep
-  abstract fun extractRange(startMs: Double, endMs: Double): Promise<String>
+  abstract fun markSegmentUploaded(filename: String): Promise<Unit>
   
   abstract fun addPCMListener(listener: (chunk: PCMChunk) -> Unit): AnvilListenerSubscription
   
@@ -128,6 +136,15 @@ abstract class HybridAnvilRecorderSpec: HybridObject() {
   @Keep
   private fun addSegmentCompletedListener_cxx(listener: Func_void_RecordingSegment): AnvilListenerSubscription {
     val __result = addSegmentCompletedListener(listener)
+    return __result
+  }
+  
+  abstract fun addManifestUpdatedListener(listener: (manifestPath: String) -> Unit): AnvilListenerSubscription
+  
+  @DoNotStrip
+  @Keep
+  private fun addManifestUpdatedListener_cxx(listener: Func_void_std__string): AnvilListenerSubscription {
+    val __result = addManifestUpdatedListener(listener)
     return __result
   }
   

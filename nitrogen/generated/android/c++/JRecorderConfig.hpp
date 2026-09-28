@@ -38,12 +38,18 @@ namespace margelo::nitro::audioanvil {
       static const auto clazz = javaClassStatic();
       static const auto fieldOutputDirectory = clazz->getField<jni::JString>("outputDirectory");
       jni::local_ref<jni::JString> outputDirectory = this->getFieldValue(fieldOutputDirectory);
+      static const auto fieldRecordingId = clazz->getField<jni::JString>("recordingId");
+      jni::local_ref<jni::JString> recordingId = this->getFieldValue(fieldRecordingId);
+      static const auto fieldResume = clazz->getField<jni::JBoolean>("resume");
+      jni::local_ref<jni::JBoolean> resume = this->getFieldValue(fieldResume);
       static const auto fieldSegmentDurationMs = clazz->getField<double>("segmentDurationMs");
       double segmentDurationMs = this->getFieldValue(fieldSegmentDurationMs);
       static const auto fieldFsyncIntervalMs = clazz->getField<double>("fsyncIntervalMs");
       double fsyncIntervalMs = this->getFieldValue(fieldFsyncIntervalMs);
       static const auto fieldSampleRate = clazz->getField<double>("sampleRate");
       double sampleRate = this->getFieldValue(fieldSampleRate);
+      static const auto fieldAacBitrate = clazz->getField<double>("aacBitrate");
+      double aacBitrate = this->getFieldValue(fieldAacBitrate);
       static const auto fieldStreamChunkMs = clazz->getField<double>("streamChunkMs");
       double streamChunkMs = this->getFieldValue(fieldStreamChunkMs);
       static const auto fieldSpeakerWindowMs = clazz->getField<double>("speakerWindowMs");
@@ -60,9 +66,12 @@ namespace margelo::nitro::audioanvil {
       jni::local_ref<JNotificationConfig> notification = this->getFieldValue(fieldNotification);
       return RecorderConfig(
         outputDirectory->toStdString(),
+        recordingId->toStdString(),
+        resume != nullptr ? std::make_optional(static_cast<bool>(resume->value())) : std::nullopt,
         segmentDurationMs,
         fsyncIntervalMs,
         sampleRate,
+        aacBitrate,
         streamChunkMs,
         speakerWindowMs,
         speakerWindowHopMs,
@@ -79,15 +88,18 @@ namespace margelo::nitro::audioanvil {
      */
     [[maybe_unused]]
     static jni::local_ref<JRecorderConfig::javaobject> fromCpp(const RecorderConfig& value) {
-      using JSignature = JRecorderConfig(jni::alias_ref<jni::JString>, double, double, double, double, double, double, jni::alias_ref<JInterruptionPolicy>, jboolean, double, jni::alias_ref<JNotificationConfig>);
+      using JSignature = JRecorderConfig(jni::alias_ref<jni::JString>, jni::alias_ref<jni::JString>, jni::alias_ref<jni::JBoolean>, double, double, double, double, double, double, double, jni::alias_ref<JInterruptionPolicy>, jboolean, double, jni::alias_ref<JNotificationConfig>);
       static const auto clazz = javaClassStatic();
       static const auto create = clazz->getStaticMethod<JSignature>("fromCpp");
       return create(
         clazz,
         jni::make_jstring(value.outputDirectory),
+        jni::make_jstring(value.recordingId),
+        value.resume.has_value() ? jni::JBoolean::valueOf(value.resume.value()) : nullptr,
         value.segmentDurationMs,
         value.fsyncIntervalMs,
         value.sampleRate,
+        value.aacBitrate,
         value.streamChunkMs,
         value.speakerWindowMs,
         value.speakerWindowHopMs,

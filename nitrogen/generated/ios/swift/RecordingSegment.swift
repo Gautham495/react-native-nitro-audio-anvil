@@ -18,8 +18,8 @@ public extension RecordingSegment {
   /**
    * Create a new instance of `RecordingSegment`.
    */
-  init(index: Double, filePath: String, sampleRate: Double, durationMs: Double, fileSize: Double, mediaStartMs: Double, startedAt: Double, endedAt: Double, wasInterrupted: Bool, interruptionReason: AnvilInterruptionReason?, routeChanged: Bool, sha256: String) {
-    self.init(index, std.string(filePath), sampleRate, durationMs, fileSize, mediaStartMs, startedAt, endedAt, wasInterrupted, { () -> bridge.std__optional_AnvilInterruptionReason_ in
+  init(index: Double, filename: String, filePath: String, sampleRate: Double, durationMs: Double, fileSize: Double, mediaStartMs: Double, startedAt: Double, endedAt: Double, wasInterrupted: Bool, interruptionReason: AnvilInterruptionReason?, routeChanged: Bool, sha256: String) {
+    self.init(index, std.string(filename), std.string(filePath), sampleRate, durationMs, fileSize, mediaStartMs, startedAt, endedAt, wasInterrupted, { () -> bridge.std__optional_AnvilInterruptionReason_ in
       if let __unwrappedValue = interruptionReason {
         return bridge.create_std__optional_AnvilInterruptionReason_(__unwrappedValue)
       } else {
@@ -31,6 +31,11 @@ public extension RecordingSegment {
   @inline(__always)
   var index: Double {
     return self.__index
+  }
+  
+  @inline(__always)
+  var filename: String {
+    return String(self.__filename)
   }
   
   @inline(__always)

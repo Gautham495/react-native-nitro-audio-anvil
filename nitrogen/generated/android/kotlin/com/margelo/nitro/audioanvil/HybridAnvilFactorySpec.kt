@@ -44,11 +44,23 @@ abstract class HybridAnvilFactorySpec: HybridObject() {
   
   @DoNotStrip
   @Keep
-  abstract fun discoverOrphanedRecordings(directory: String): Promise<Array<OrphanedRecording>>
+  abstract fun discoverOrphanedRecordings(outputDirectory: String): Promise<Array<RecoveredRecording>>
   
   @DoNotStrip
   @Keep
-  abstract fun concatenate(segmentPaths: Array<String>, outputPath: String): Promise<RecordingSegment>
+  abstract fun concatenate(outputDirectory: String, recordingId: String, outputPath: String): Promise<RecordingSegment>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun deleteRecording(outputDirectory: String, recordingId: String): Promise<Boolean>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun retryPendingUploads(outputDirectory: String): Promise<Array<PendingUpload>>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun markSegmentUploaded(outputDirectory: String, recordingId: String, filename: String): Promise<Unit>
 
   // Default implementation of `HybridObject.toString()`
   override fun toString(): String {

@@ -121,10 +121,24 @@ open class HybridAnvilRecorderSpec_cxx {
   }
 
   // Properties
-  public final var sessionId: std.string {
+  public final var recordingId: std.string {
     @inline(__always)
     get {
-      return std.string(self.__implementation.sessionId)
+      return std.string(self.__implementation.recordingId)
+    }
+  }
+  
+  public final var folderPath: std.string {
+    @inline(__always)
+    get {
+      return std.string(self.__implementation.folderPath)
+    }
+  }
+  
+  public final var manifestPath: std.string {
+    @inline(__always)
+    get {
+      return std.string(self.__implementation.manifestPath)
     }
   }
   
@@ -252,21 +266,21 @@ open class HybridAnvilRecorderSpec_cxx {
   }
   
   @inline(__always)
-  public final func extractRange(startMs: Double, endMs: Double) -> bridge.Result_std__shared_ptr_Promise_std__string___ {
+  public final func markSegmentUploaded(filename: std.string) -> bridge.Result_std__shared_ptr_Promise_void___ {
     do {
-      let __result = try self.__implementation.extractRange(startMs: startMs, endMs: endMs)
-      let __resultCpp = { () -> bridge.std__shared_ptr_Promise_std__string__ in
-        let __promise = bridge.create_std__shared_ptr_Promise_std__string__()
-        let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_std__string__(__promise)
+      let __result = try self.__implementation.markSegmentUploaded(filename: String(filename))
+      let __resultCpp = { () -> bridge.std__shared_ptr_Promise_void__ in
+        let __promise = bridge.create_std__shared_ptr_Promise_void__()
+        let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_void__(__promise)
         __result
-          .then({ __result in __promiseHolder.resolve(std.string(__result)) })
+          .then({ __result in __promiseHolder.resolve() })
           .catch({ __error in __promiseHolder.reject(__error.toCpp()) })
         return __promise
       }()
-      return bridge.create_Result_std__shared_ptr_Promise_std__string___(__resultCpp)
+      return bridge.create_Result_std__shared_ptr_Promise_void___(__resultCpp)
     } catch (let __error) {
       let __exceptionPtr = __error.toCpp()
-      return bridge.create_Result_std__shared_ptr_Promise_std__string___(__exceptionPtr)
+      return bridge.create_Result_std__shared_ptr_Promise_void___(__exceptionPtr)
     }
   }
   
@@ -379,6 +393,23 @@ open class HybridAnvilRecorderSpec_cxx {
         let __wrappedFunction = bridge.wrap_Func_void_RecordingSegment(listener)
         return { (__segment: RecordingSegment) -> Void in
           __wrappedFunction.call(__segment)
+        }
+      }())
+      let __resultCpp = __result
+      return bridge.create_Result_AnvilListenerSubscription_(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_AnvilListenerSubscription_(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func addManifestUpdatedListener(listener: bridge.Func_void_std__string) -> bridge.Result_AnvilListenerSubscription_ {
+    do {
+      let __result = try self.__implementation.addManifestUpdatedListener(listener: { () -> (String) -> Void in
+        let __wrappedFunction = bridge.wrap_Func_void_std__string(listener)
+        return { (__manifestPath: String) -> Void in
+          __wrappedFunction.call(std.string(__manifestPath))
         }
       }())
       let __resultCpp = __result

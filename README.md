@@ -6,7 +6,7 @@
 
 # react-native-nitro-audio-anvil
 
-**React Native Nitro Module** for **corruption-proof, long-form microphone recording** — PCM straight to disk, `fsync`ed and segmented, with live PCM and speaker-window streams. Built for the 60–90 minute recordings that must survive incoming calls, backgrounding, force-quits and dead batteries.
+**React Native Nitro Module** for **corruption-proof, long-form microphone recording** — PCM straight through an on-device AAC-LC encoder into ADTS segments and a live HLS manifest, `fsync`ed as it goes. Built for the 60–90 minute recordings that must survive incoming calls, backgrounding, force-quits and dead batteries — and stream live to your object store while they happen.
 
 ---
 
@@ -15,32 +15,33 @@
 > - This library was originally created for my production app, where we record **long conversations — 60 to 90 minutes** — on the phone that is also, well, a phone.
 > - We started on `expo-audio`, and it served its purpose: it got us recording in an afternoon, and for short clips it is exactly the right tool. Then a customer took an incoming call 40 minutes into a recording. The encoder was torn down mid-write, the `.m4a` never got its index written, and the file was unrecoverable. Nobody did anything wrong — a container that needs a finalize step is simply the wrong shape for a recording that can be interrupted at any second.
 > - **Losing an audio file is worse than most other failures**, because there is no retry. The customer already spoke. The moment is gone. If we lose the bytes, we lose the meeting — and with it any transcript, summary, action item or downstream analysis that depended on it. Everything else in a recording pipeline (transcription, upload, storage) can be retried. The recording itself cannot.
-> - Anvil is built with **fault tolerance as the first design constraint, not a nice-to-have**. There is no encoder and no finalize step: raw PCM goes to a WAV file whose header is patched and `fsync`ed twice a second, in 30-second segments. A call, a crash or a power cut costs you at most half a second of audio — never a file. On next launch, `discoverOrphanedRecordings()` repairs any headers that never got a final patch and hands you back everything on disk. `RecordingService` groups sessions across the crash boundary so a 90-minute meeting interrupted mid-way still comes back as one logical recording.
+> - Anvil is built with **fault tolerance as the first design constraint, not a nice-to-have**. There is no container index and no finalize step: PCM is encoded frame-by-frame into **ADTS AAC-LC**, whose frames are self-describing — every frame carries its own header. A `.aac` file is a valid, playable file at every instant, not just at `stop()`. Segments are rotated every `segmentDurationMs` and `fsync`ed twice a second. A **live HLS manifest** is rewritten (tmp + rename + directory `fsync`) after every segment, so a call, a crash or a power cut costs you at most half a second of audio — never a file. On next launch, `discoverOrphanedRecordings()` walks the folder, validates every referenced segment as parseable ADTS, salvages any trailing unreferenced segment, and hands back a `RecoveredRecording` you can **resume**, **finalize** or **discard**.
+> - Because the format is HLS out of the box, the same segments that survive crashes also **stream live to R2 (or any object store) during recording**. A per-segment sync agent PUTs each `.aac` and rewrites `manifest.m3u8` as it lands; anyone with the manifest URL can play the recording live in `hls.js`, `react-native-video` or AVPlayer while you're still capturing.
 >
 > **What you get out of the box:**
 >
-> - Mono 16-bit WAV capture that is a valid file at every instant, not just at `stop()`
-> - Segmentation every `segmentDurationMs` (default 30 s), rotated on pause, interruption and input-device change
+> - Mono ADTS AAC-LC capture — every segment is a playable file the moment `fsync` returns, no container to finalize
+> - Live HLS manifest rewritten after every segment, sealed with `#EXT-X-ENDLIST` on `stop()`
+> - **Folder-per-recording** layout under a `recordingId` you own — one folder, one manifest, one clean object-key prefix for uploads
+> - Segmentation every `segmentDurationMs` (default 6 s), rotated on pause, interruption and input-device change
 > - Native handling of calls, Siri, alarms, media-server reset (iOS), audio-focus loss and capture-silenced (Android)
 > - **Auto-resume with exponential backoff** when another app releases the mic — WhatsApp, Voice Memos, Siri, phone calls
 > - **Deferred-resume-on-foreground** for the case where the interruption ends while your app is backgrounded (both platforms have known bugs here — Anvil works around them)
 > - `PCMChunk` stream (default 100 ms) for streaming speech-to-text, with sequence numbers so gaps are detectable
 > - Overlapping `SpeakerWindow` stream (default 1.5 s / 750 ms hop) for speaker labelling or diarization
-> - `extractRange(startMs, endMs)` to re-read any span from disk, even while recording — useful when a streaming socket drops
-> - `concatenate(paths, output)` to stitch segments into one WAV without re-encoding
-> - `discoverOrphanedRecordings(dir)` with WAV header repair on relaunch
-> - `createRecordingService()` to group sessions across crashes under your own id (meetingId, callId, …)
-> - SHA-256 per finalized segment for integrity checks
+> - `Anvil.concatenate(dir, recordingId, out)` to stitch segments into one `.aac` without re-encoding (byte-copy of ADTS payloads)
+> - `Anvil.discoverOrphanedRecordings(dir)` — folder-level recovery with manifest verification and ADTS frame scanning
+> - Resume across a crash: `Anvil.createRecorder({ recordingId, resume: true, ... })` picks up in the same folder, adds `#EXT-X-DISCONTINUITY` on parameter changes
+> - `Anvil.retryPendingUploads(dir)` for a second, independent recovery queue: files written locally but never confirmed uploaded via `.uploaded` sentinels
 > - Foreground-service notification on Android, `audio` background mode on iOS
 >
 > **What this library does NOT do** (by design):
 >
-> - **No encoding.** Nothing to opus, aac or mp3 on device. WAV out. Encode server-side if you want smaller files — do it after the bytes are safely off the device, never before.
 > - **No transcription, no VAD, no speaker embedding, no summarization.** The `PCMChunk` and `SpeakerWindow` streams hand you the bytes; you pick the model and where it runs (cloud, on-device with ExecuTorch, whatever).
-> - **No upload.** Pair with [`react-native-nitro-cloud-uploader`](https://github.com/Gautham495/react-native-nitro-cloud-uploader) for S3-compatible multipart uploads, or roll your own. The example app wires both.
-> - **No playback.** Pair with [`react-native-nitro-player`](https://github.com/riteshshukla04/react-native-nitro-player) — every WAV Anvil writes plays as-is.
+> - **No upload transport.** Anvil emits `addSegmentCompletedListener` and `addManifestUpdatedListener` events with the file paths; you write the HTTP layer (a Cloudflare Worker + presigned R2 PUT URLs is ~40 lines — the example ships one). Anvil owns the disk; JS owns the network.
+> - **No playback.** Any HLS player works — the example uses `react-native-video`'s hook API (`useVideoPlayer` + `VideoView`). Individual `.aac` segments play in VLC, ffmpeg, browsers or anything that speaks `audio/aac`; concatenated archives play everywhere.
 >
-> If your app needs to record something long, on the same device that can be interrupted at any second, and you cannot afford to lose it — this is the recorder.
+> If your app needs to record something long, on the same device that can be interrupted at any second, and you cannot afford to lose it — this is the recorder. If you also need to stream it live to an object store while it's happening, this is that too.
 
 ---
 
@@ -54,12 +55,13 @@ cd ios && pod install
 > [!IMPORTANT]
 >
 > - **iOS**: Fully tested and production-ready ✅
->   - `AVAudioEngine` capture, `AVAudioSession` interruption / route / media-server-reset handling
+>   - `AVAudioEngine` capture → `AVAudioConverter` PCM→AAC-LC → ADTS wrapping
+>   - `AVAudioSession` interruption / route / media-server-reset handling, `.default` mode
 >   - CallKit call detection, `audio` background mode
 >   - Auto-resume with exponential backoff (200 ms → 400 ms → 800 ms → 1.6 s → 3.2 s) when foreground
->   - See [iOS quirks](./docs/ios-quirks.md) for platform-specific gotchas (background reactivation bug, CarPlay, Bluetooth chaos)
+>   - See [iOS quirks](./docs/ios-quirks.md) for platform-specific gotchas (background reactivation bug, CarPlay, Bluetooth chaos, AAC-LC bitrate ceiling)
 > - **Android**: Fully tested and production-ready ✅
->   - `AudioRecord` on a dedicated audio thread
+>   - `AudioRecord` on a dedicated audio thread → `MediaCodec` AAC-LC encoder → ADTS wrapping
 >   - Microphone foreground service
 >   - Audio focus + `isClientSilenced` interruption detection
 >   - Auto-resume with exponential backoff (300 ms → 600 ms → 1.2 s → 2.4 s → 4.8 s) when foreground
@@ -86,18 +88,16 @@ cd ios && pod install
   </tr>
 </table>
 
-The example app records with Anvil, plays the result with [react-native-nitro-player](https://github.com/riteshshukla04/react-native-nitro-player) and uploads it with [react-native-nitro-cloud-uploader](https://github.com/Gautham495/react-native-nitro-cloud-uploader) — the whole capture → play → upload flow on Nitro Modules.
+The example app records with Anvil, streams each segment live to Cloudflare R2 via a Worker that mints presigned PUT URLs, and plays the resulting HLS stream back with [react-native-video](https://github.com/TheWidlarzGroup/react-native-video) — the whole capture → stream → play flow, live, while you're still recording.
 
 > [!NOTE]
 >
-> The example uploads to my Cloudflare R2 bucket `test-bucket` via a public Worker at `https://api.gauthamvijay.com`, so you can run it end-to-end without setting up any backend. Uploaded files are automatically deleted after 3 days.
+> The example streams to my R2 bucket via a public Worker at `https://api.gauthamvijay.com`, and serves the manifest back from `https://hls-streaming.gauthamvijay.com/<recordingId>/manifest.m3u8`, so you can run it end-to-end without setting up any backend. Uploaded recordings are deleted after 3 days.
 >
 > ```tsx
 > const BASE_URL = 'https://api.gauthamvijay.com';
-> const CREATE_UPLOAD_URL = `${BASE_URL}/create-and-start-upload`;
-> const COMPLETE_UPLOAD_URL = `${BASE_URL}/complete-upload`;
-> const ABORT_UPLOAD_URL = `${BASE_URL}/abort-upload`;
-> const SINGLE_UPLOAD_URL = `${BASE_URL}/single-upload`;
+> const HLS_PUT_URL = `${BASE_URL}/hls-put-url`;
+> const HLS_PUBLIC_BASE = 'https://hls-streaming.gauthamvijay.com';
 > ```
 
 ---
@@ -108,34 +108,35 @@ For long-form microphone recording, the library itself is only half the story. T
 
 | Doc                                          | When to read                                                                          |
 | -------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [iOS quirks](./docs/ios-quirks.md)           | Before shipping on iOS — covers the background reactivation bug, CarPlay, Bluetooth   |
+| [iOS quirks](./docs/ios-quirks.md)           | Before shipping on iOS — background reactivation bug, CarPlay, Bluetooth, bitrate ceiling |
 | [OEM quirks](./docs/oem-quirks.md)           | Before shipping on Android — per-brand setup for Xiaomi, Huawei, Oppo, Vivo, and more |
 | [Troubleshooting](./docs/troubleshooting.md) | When something breaks — symptom-first debugging with hypothesis and fix per symptom   |
-| [Recovery](./docs/recovery.md)               | When integrating `RecordingService` for cross-crash session grouping                  |
+| [Recovery](./docs/recovery.md)               | Folder-per-recording layout, `discoverOrphanedRecordings`, resume/finalize/discard    |
 
-Every real-world quirk we have hit — background reactivation permanent-fail on iOS, HyperOS killing foreground services, WhatsApp holding the mic HAL, sample rate changes on Bluetooth route — is documented in one of these files. If you hit something not covered, file an issue and it will land here.
+Every real-world quirk we have hit — background reactivation permanent-fail on iOS, HyperOS killing foreground services, WhatsApp holding the mic HAL, sample rate changes on Bluetooth route, AAC-LC bitrate ceiling at low sample rates — is documented in one of these files. If you hit something not covered, file an issue and it will land here.
 
 ---
 
 ## 🧠 Overview
 
-| Feature                     | Implementation                                                                   |
-| --------------------------- | -------------------------------------------------------------------------------- |
-| Format                      | Mono 16-bit PCM WAV, no encoder, no finalize step                                |
-| Durability                  | Header patched + `fsync` every `fsyncIntervalMs` (default 500 ms)                |
-| Segmentation                | New file every `segmentDurationMs`, on pause, interruption and route change      |
-| Phone calls / Siri / alarms | Segment finalized **before** the OS takes the mic; event emitted                 |
-| Auto-resume                 | Exponential backoff retry when the OS releases the mic — foreground-gated        |
-| Bluetooth / headset changes | Route event + segment rotation so no file mixes two input devices                |
-| Background recording        | iOS `audio` background mode / Android microphone foreground service              |
-| Crash & force-quit recovery | `discoverOrphanedRecordings()` repairs headers; `RecordingService` re-groups     |
-| Live PCM stream             | `PCMChunk`s (default 100 ms) for streaming speech-to-text, with sequence numbers |
-| Speaker windows             | Overlapping `SpeakerWindow`s (default 1.5 s / 750 ms hop) for speaker labelling  |
-| Range extraction            | `extractRange(startMs, endMs)` re-reads any span from disk, even while recording |
-| Stitching                   | `concatenate(paths, output)` joins segments into one WAV without re-encoding     |
-| Integrity                   | SHA-256 per finalized segment                                                    |
-| Storage guard               | Warning event below a configurable free-space threshold                          |
-| Threading                   | One owner thread per recorder, no locks, no JS-thread blocking                   |
+| Feature                     | Implementation                                                                            |
+| --------------------------- | ----------------------------------------------------------------------------------------- |
+| Format                      | Mono ADTS AAC-LC, self-describing frames, no container index, no finalize step            |
+| Layout                      | Folder-per-recording under a caller-owned `recordingId`; one `manifest.m3u8` + `NNNNN.aac` |
+| Durability                  | `fsync` every `fsyncIntervalMs` (default 500 ms); manifest rewritten tmp+rename+dir-fsync  |
+| Segmentation                | New file every `segmentDurationMs`, on pause, interruption and route change               |
+| Live streaming              | HLS out of the box — same segments feed local disk and per-file sync agent to your CDN     |
+| Phone calls / Siri / alarms | Segment finalized **before** the OS takes the mic; event emitted                          |
+| Auto-resume                 | Exponential backoff retry when the OS releases the mic — foreground-gated                 |
+| Bluetooth / headset changes | Route event + segment rotation so no file mixes two input devices                         |
+| Background recording        | iOS `audio` background mode / Android microphone foreground service                       |
+| Crash & force-quit recovery | `discoverOrphanedRecordings` → `RecoveredRecording[]` with three verbs                    |
+| Live PCM stream             | `PCMChunk`s (default 100 ms) for streaming speech-to-text, with sequence numbers          |
+| Speaker windows             | Overlapping `SpeakerWindow`s (default 1.5 s / 750 ms hop) for speaker labelling           |
+| Stitching                   | `concatenate(dir, id, out)` byte-copies ADTS payloads — no re-encoding, no quality loss   |
+| Upload recovery             | Sync agent writes `.uploaded` sentinels; `retryPendingUploads` returns what didn't ship   |
+| Storage guard               | Warning event below a configurable free-space threshold                                   |
+| Threading                   | One owner thread per recorder, no locks, no JS-thread blocking                            |
 
 ---
 
@@ -143,20 +144,20 @@ Every real-world quirk we have hit — background reactivation permanent-fail on
 
 Every design decision in Anvil starts from the question "what happens if the process disappears right now?" Here is the answer for each failure mode:
 
-| Failure                                                 | What Anvil does                                                                                                                                                  | What you get back                                                        |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Incoming phone call                                     | iOS `AVAudioSession.interruptionNotification` / Android audio focus loss → current segment is finalized (patched, `fsync`ed, hashed) before the OS takes the mic | An `interruption` event with a valid WAV path, then optional auto-resume |
-| Another app takes the mic (WhatsApp, Voice Memos, Siri) | Segment finalized before the OS reassigns the mic; when the other app releases it, native retries with exponential backoff until it succeeds or gives up         | Recording resumes seamlessly when the other app is done                  |
-| Bluetooth headset connect / disconnect                  | Route change → current segment finalized so no file mixes two input devices                                                                                      | A `routeChange` event and a fresh segment for the new device             |
-| App backgrounded / screen locked                        | iOS `audio` background mode / Android microphone foreground service keeps the capture running                                                                    | Recording continues; timer keeps advancing                               |
-| Interruption ends while app is backgrounded             | Both platforms have OS bugs blocking background auto-resume (documented). Native emits a "deferred" error; JS wires a foreground listener to retry on return     | Recording resumes the moment the user opens the app                      |
-| App force-quit                                          | Whatever was `fsync`ed is on disk. On next launch, `discoverOrphanedRecordings` repairs any headers that never got patched                                       | Every segment written, up to the last 500 ms                             |
-| Process crash / OOM kill                                | Same as force-quit — nothing to finalize, nothing to lose except the last 500 ms                                                                                 | Same as above                                                            |
-| Device reboot / battery dies                            | Same as force-quit                                                                                                                                               | Same as above                                                            |
-| Streaming STT socket drops                              | `extractRange(startMs, endMs)` re-reads exactly the missing span from disk                                                                                       | A WAV you can upload to a batch transcription endpoint                   |
-| Free space low                                          | Warning event on `start()` and every rotation, before it becomes an error                                                                                        | Time to prompt the user or rotate off the device                         |
+| Failure                                                 | What Anvil does                                                                                                                                                | What you get back                                                          |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Incoming phone call                                     | iOS `AVAudioSession.interruptionNotification` / Android audio focus loss → current segment is finalized (encoded, `fsync`ed, manifest updated) before the OS takes the mic | An `interruption` event with a valid `.aac` path, then optional auto-resume |
+| Another app takes the mic (WhatsApp, Voice Memos, Siri) | Segment finalized before the OS reassigns the mic; when the other app releases it, native retries with exponential backoff until it succeeds or gives up       | Recording resumes seamlessly when the other app is done                    |
+| Bluetooth headset connect / disconnect                  | Route change → current segment finalized so no file mixes two input devices                                                                                    | A `routeChange` event and a fresh segment for the new device               |
+| App backgrounded / screen locked                        | iOS `audio` background mode / Android microphone foreground service keeps the capture running                                                                  | Recording continues; timer keeps advancing; segments keep landing          |
+| Interruption ends while app is backgrounded             | Both platforms have OS bugs blocking background auto-resume (documented). Native emits a "deferred" error; JS wires a foreground listener to retry on return   | Recording resumes the moment the user opens the app                        |
+| App force-quit                                          | Whatever was `fsync`ed is on disk. Every ADTS frame that made it is self-describing and playable. Discovery salvages any trailing unreferenced segment.        | Every segment written, up to the last 500 ms                               |
+| Process crash / OOM kill                                | Same as force-quit — nothing to finalize, nothing to lose except the last 500 ms                                                                               | Same as above                                                              |
+| Device reboot / battery dies                            | Same as force-quit                                                                                                                                             | Same as above                                                              |
+| Streaming upload fails mid-recording                    | JS-owned sync agent handles retries with its own policy. Anvil records success via `.uploaded` sentinels; `retryPendingUploads` returns what didn't confirm    | The queue you drain on next launch                                         |
+| Free space low                                          | Warning event on `start()` and every rotation, before it becomes an error                                                                                      | Time to prompt the user or rotate off the device                           |
 
-There is no moov atom, no encoder state, no finalize step to skip. The file on disk is always a valid WAV, at every instant.
+There is no moov atom, no encoder state, no finalize step to skip. Every ADTS frame is self-describing; the manifest is rewritten atomically; the file on disk is always a valid AAC/HLS artifact, at every instant.
 
 ---
 
@@ -166,7 +167,7 @@ Real-world microphone interruptions are messier than the OS docs suggest. Anvil 
 
 **Native side (both platforms):**
 
-- On interruption begin: stop capture, finalize the current segment, emit `interruption` event with `phase: 'began'` and a valid WAV path for what was recorded up to that moment
+- On interruption begin: stop capture, finalize the current segment, emit `interruption` event with `phase: 'began'` and a valid `.aac` path for what was recorded up to that moment
 - On interruption end with the OS-provided `shouldResume` flag: check foreground state, then retry `resume()` with exponential backoff (5 attempts, ~6-9 seconds total) until it succeeds
 - If foreground check fails: emit an error with the message `"Auto-resume deferred — bring app to foreground to continue"` and stop trying. Retrying while backgrounded wastes CPU on iOS (Apple platform bug 560557684) and battery on Android (aggressive OEMs like Xiaomi kill background retries anyway).
 
@@ -221,11 +222,11 @@ useEffect(() => {
 - Long interruptions with your app backgrounded: deferred, resumes the moment the user returns to your app
 - Uncooperative other apps holding the mic too long: 5 tries with backoff, then user taps Resume manually
 
-The example app wires all of this. See [`example/App.tsx`](./example/App.tsx) for the reference implementation.
+The example app wires all of this. See [`example/src/App.tsx`](./example/src/App.tsx) for the reference implementation.
 
 > [!TIP]
 >
-> - **iOS-specific quirks** (background reactivation permanent-fail bug, CarPlay routing chaos, media services reset, etc.) are documented in [docs/ios-quirks.md](./docs/ios-quirks.md). Read this before shipping on iOS.
+> - **iOS-specific quirks** (background reactivation permanent-fail bug, CarPlay routing chaos, media services reset, AAC-LC bitrate ceiling at low sample rates) are documented in [docs/ios-quirks.md](./docs/ios-quirks.md). Read this before shipping on iOS.
 > - **Android OEM quirks** (Xiaomi/HyperOS, Huawei, Oppo, Vivo, Realme, OnePlus, Samsung) may still kill your foreground service on screen-off despite everything the library does. This is a device-level setting the user has to change — see [docs/oem-quirks.md](./docs/oem-quirks.md) for a per-brand walkthrough, or link users to [dontkillmyapp.com](https://dontkillmyapp.com/) which stays up to date with each OEM's UI changes.
 > - **Something not working?** See [docs/troubleshooting.md](./docs/troubleshooting.md) for symptom-first debugging.
 
@@ -238,11 +239,16 @@ import { Anvil, type AnvilRecorder } from 'react-native-nitro-audio-anvil';
 
 if ((await Anvil.requestPermission()) !== 'granted') return;
 
+const recordingId = `rec-${Date.now()}`; // yours to own — meeting id, call id, uuid, anything
+                                          // that's a single path segment (no /, \, .., NUL, ≤256 chars)
+
 const recorder: AnvilRecorder = await Anvil.createRecorder({
   outputDirectory: `${documentDirectory}/recordings`, // plain path or file:// URL
-  segmentDurationMs: 30_000,
+  recordingId,
+  segmentDurationMs: 6_000,
   fsyncIntervalMs: 500,
-  sampleRate: 16000,
+  sampleRate: 48000,          // mic-native on modern iPhones; skips resampler
+  aacBitrate: 96000,           // AAC-LC has a per-sample-rate ceiling — see troubleshooting.md
   streamChunkMs: 100,
   speakerWindowMs: 1500,
   speakerWindowHopMs: 750,
@@ -252,7 +258,7 @@ const recorder: AnvilRecorder = await Anvil.createRecorder({
   notification: { title: 'Recording', text: 'Tap to return' },
 });
 
-// Stream 1 → your streaming speech-to-text socket (pcm16, 16 kHz, mono — send the buffer as-is)
+// Stream 1 → your streaming speech-to-text socket (pcm16, mono — raw pre-encode buffer)
 const pcm = recorder.addPCMListener((chunk) => socket.send(chunk.buffer));
 
 // Stream 2 → your speaker-embedding model → label who is talking
@@ -262,77 +268,129 @@ const speaker = recorder.addSpeakerWindowListener(async (window) => {
 });
 
 recorder.addInterruptionListener((e) => {
-  // e.phase === 'began': e.segmentPath is already a valid file on disk
+  // e.phase === 'began': e.segmentPath is already a valid .aac on disk
   // e.phase === 'ended' && !e.shouldResume: call recorder.resume() when you want
 });
-recorder.addSegmentCompletedListener((segment) => uploader.enqueue(segment));
+recorder.addSegmentCompletedListener((segment) => {
+  // segment.filePath, segment.filename, segment.index, segment.durationMs, …
+  syncAgent.enqueue(segment); // your R2/S3 uploader; the example ships one
+});
+recorder.addManifestUpdatedListener((m) => {
+  // m.manifestPath, m.segmentCount — fires after every atomic manifest rewrite
+  syncAgent.enqueueManifest(m);
+});
 recorder.addErrorListener((error) => log.error(error.code, error.message));
 
 await recorder.start();
 // ...
-const segments = await recorder.stop();
+const segments = await recorder.stop();  // seals manifest.m3u8 with #EXT-X-ENDLIST
 
 pcm.remove();
 speaker.remove();
 ```
 
+The output on disk is exactly:
+
+```
+recordings/<recordingId>/
+  manifest.m3u8
+  00000.aac
+  00001.aac
+  00002.aac
+  ...
+```
+
+Play it directly by pointing any HLS player at `manifest.m3u8`. Stream each file to R2 as it lands and point players at the CDN URL instead. Both work off the same bytes.
+
 ### One file instead of segments
 
 ```ts
 const full = await Anvil.concatenate(
-  segments.map((s) => s.filePath),
-  `${documentDirectory}/recordings/meeting-full.wav`
+  outputDirectory,
+  recordingId,
+  `${documentDirectory}/recordings/meeting-full.aac`
 );
-// full.filePath, full.durationMs, full.fileSize, full.sha256
+// full.filePath, full.durationMs, full.fileSize
 ```
 
-### Recovering a gap in the stream
-
-```ts
-// Streaming socket dropped from media time 120000 to 135000 ms
-const path = await recorder.extractRange(120_000, 135_000);
-await transcribeFile(path); // your batch transcription endpoint
-```
+Byte-copy of the ADTS payloads — no re-encoding, no quality loss. Runs at flash speed (seconds for a 90-minute recording). The result is a plain `.aac` file every player understands; server-side you can `ffmpeg -c copy` it into `.m4a` or `.mp4` if you need a different container.
 
 ### After a crash
 
 ```ts
-const orphaned = await Anvil.discoverOrphanedRecordings(recordingsDir);
-for (const session of orphaned) uploader.enqueueAll(session.segments);
+const orphans = await Anvil.discoverOrphanedRecordings(recordingsDir);
+// For each RecoveredRecording, give the user one of three verbs:
+//   Resume:   Anvil.createRecorder({ recordingId: o.recordingId, resume: true, ... })
+//   Finalize: Anvil.concatenate(dir, o.recordingId, outPath)
+//   Discard:  Anvil.deleteRecording(dir, o.recordingId)
 ```
 
-Headers are repaired and markers cleared before the sessions are returned; the WAV files stay on disk for you. To group sessions back into your own ids (meetingId, callId…) across a crash — so a 90-minute meeting interrupted mid-way comes back as one logical recording — use `createRecordingService`. See [`docs/recovery.md`](./docs/recovery.md).
+Discovery verifies every referenced segment as parseable ADTS, salvages any unreferenced trailing segment if it parses, drops it if it doesn't, and returns `folderPath`, `manifestPath`, `segments`, `totalDurationMs`, and `wasInterrupted`. See [`docs/recovery.md`](./docs/recovery.md) for the full pattern and [`example/src/RecoveryCard.tsx`](./example/src/RecoveryCard.tsx) for the reference UI.
+
+### Resuming pending uploads
+
+Independent of recorder recovery — if you were streaming segments to R2, some may not have confirmed uploaded:
+
+```ts
+const pending = await Anvil.retryPendingUploads(outputDirectory);
+for (const p of pending) {
+  await putHlsFile(p.recordingId, p.filename, p.filePath);
+  await Anvil.markSegmentUploaded(p.filePath);
+}
+```
+
+`.uploaded` sentinels next to each `.aac` and `manifest.m3u8` are the source of truth for what has confirmed shipped. Run this on launch alongside `discoverOrphanedRecordings`.
 
 ---
 
-## 🔁 Record → Play → Upload, all Nitro
+## 🎙️ Record → Stream → Play, all live
 
-Anvil produces plain WAV files, so the rest of the pipeline is whatever you already use. The example app wires it like this:
+Anvil produces HLS out of the box, so the "upload after recording" step disappears entirely — segments stream to your CDN as they finalize, and anyone with the manifest URL can play them back live. The example app wires it like this:
 
 ```ts
-// Record
-const segments = await recorder.stop();
-const full = await Anvil.concatenate(
-  segments.map((s) => s.filePath),
-  outputPath
-);
-
-// Play — react-native-nitro-player
-await PlayerQueue.addTrackToPlaylist(playlistId, {
-  id: full.filePath,
-  title: 'Recording',
-  artist: 'Anvil',
-  album: 'Recordings',
-  duration: full.durationMs / 1000,
-  url: `file://${full.filePath}`,
+// 1) Attach a per-segment sync agent that PUTs to R2 (or any object store)
+recorder.addSegmentCompletedListener(async (segment) => {
+  const { url } = await fetch(`${BASE_URL}/hls-put-url`, {
+    method: 'POST',
+    body: JSON.stringify({
+      recordingId,
+      filename: segment.filename,
+      contentType: 'audio/aac',
+    }),
+  }).then((r) => r.json());
+  await fetch(url, {
+    method: 'PUT',
+    body: await readAsBinary(segment.filePath),
+    headers: { 'Content-Type': 'audio/aac' },
+  });
+  await Anvil.markSegmentUploaded(segment.filePath);
 });
-await TrackPlayer.playSong(full.filePath, playlistId);
 
-// Upload — react-native-nitro-cloud-uploader (multipart presigned URLs, background, resumable)
-await CloudUploader.startUpload(uploadId, full.filePath, uploadUrls, 3, true);
+recorder.addManifestUpdatedListener(async (m) => {
+  const { url } = await fetch(`${BASE_URL}/hls-put-url`, {
+    method: 'POST',
+    body: JSON.stringify({
+      recordingId,
+      filename: 'manifest.m3u8',
+      contentType: 'application/vnd.apple.mpegurl',
+    }),
+  }).then((r) => r.json());
+  await fetch(url, {
+    method: 'PUT',
+    body: await readAsText(m.manifestPath),
+    headers: { 'Content-Type': 'application/vnd.apple.mpegurl' },
+  });
+  await Anvil.markSegmentUploaded(m.manifestPath);
+});
+
+// 2) Live playback — react-native-video (or hls.js in a browser, or AVPlayer natively)
+const player = useVideoPlayer(`${HLS_PUBLIC_BASE}/${recordingId}/manifest.m3u8`);
+return <VideoView player={player} style={{ width: 320, height: 60 }} />;
 ```
 
-Every step is a Nitro Module and nothing crosses the old bridge. See [`example/`](./example) for the full app with a player card, an upload progress bar and "play the uploaded URL".
+Backend endpoint is ~40 lines — the example ships both a Cloudflare Worker version (Hono + `aws4fetch`) and an Express version (AWS SDK v3). See [`example/backend/`](./example/backend). The whole record-to-listener path is Nitro-native on device and thin HTTP on the wire.
+
+For the archival case — one file at the end — call `Anvil.concatenate` after `stop()` and upload the resulting `.aac` via whatever multipart uploader you already use.
 
 ---
 
@@ -396,22 +454,23 @@ if (Platform.OS === 'android' && Platform.Version >= 33) {
 
 | Listener                      | When                                                                                              |
 | ----------------------------- | ------------------------------------------------------------------------------------------------- |
-| `addPCMListener`              | every `streamChunkMs` while recording                                                             |
+| `addPCMListener`              | every `streamChunkMs` while recording (raw pre-encode PCM)                                        |
 | `addSpeakerWindowListener`    | every `speakerWindowHopMs` once a full window exists                                              |
+| `addSegmentCompletedListener` | an ADTS `.aac` file was finalized; contains `filename`, `filePath`, `index`, `durationMs`         |
+| `addManifestUpdatedListener`  | `manifest.m3u8` was atomically rewritten (after every segment + on stop)                          |
 | `addInterruptionListener`     | OS took / returned the mic (`call`, `muted`, `route`, `reset`, `focus`, `other`)                  |
 | `addRouteChangeListener`      | input device changed; segment rotated when the active input changed                               |
 | `addPermissionChangeListener` | mic permission differs from last check (checked on every start/resume)                            |
 | `addStorageWarningListener`   | free space below `storageWarningBytes` (checked at start and every rotation)                      |
-| `addSegmentCompletedListener` | a WAV file was finalized, with `sha256`                                                           |
 | `addErrorListener`            | pipeline failure OR deferred-resume signal; recorder moves to `interrupted`, data on disk is safe |
 
-`RecorderState`: `idle → recording ⇄ paused / interrupted → stopped`. `stop()` always resolves with every segment.
+`RecorderState`: `idle → recording ⇄ paused / interrupted → stopped`. `stop()` always resolves with every segment and seals the manifest.
 
 ### Timeline
 
-All timestamps (`PCMChunk.timestampMs`, `SpeakerWindow.startMs`, `RecordingSegment.mediaStartMs`, `extractRange`) are **media time**: milliseconds of captured audio, which only advance while capturing. That is the timeline a streaming transcription service sees, so joining transcript segments with speaker labels is a plain interval overlap.
+All timestamps (`PCMChunk.timestampMs`, `SpeakerWindow.startMs`, `RecordingSegment.mediaStartMs`) are **media time**: milliseconds of captured audio, which only advance while capturing. That is the timeline a streaming transcription service sees, so joining transcript segments with speaker labels is a plain interval overlap.
 
-**Note on resumed recordings**: after an interruption + auto-resume, media time resumes from where it left off (the samples pause too). If you're rebuilding a wall-clock timeline for the UI, use `Date.now()` at each turn rather than media time — media time is a captured-audio counter, not a real-world one.
+**Note on resumed recordings**: after an interruption + auto-resume within the same session, media time resumes from where it left off (the samples pause too). After a crash-recovery `resume: true`, the manifest gets `#EXT-X-DISCONTINUITY` between the old and new segments so HLS players handle the discontinuity correctly. If you're rebuilding a wall-clock timeline for the UI, use `Date.now()` at each turn rather than media time — media time is a captured-audio counter, not a real-world one.
 
 ---
 

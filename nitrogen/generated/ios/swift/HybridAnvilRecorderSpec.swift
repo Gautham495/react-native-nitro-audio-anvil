@@ -10,7 +10,9 @@ import NitroModules
 /// See ``HybridAnvilRecorderSpec``
 public protocol HybridAnvilRecorderSpec_protocol: HybridObject {
   // Properties
-  var sessionId: String { get }
+  var recordingId: String { get }
+  var folderPath: String { get }
+  var manifestPath: String { get }
   var state: RecorderState { get }
   var totalDurationMs: Double { get }
   var currentSegmentPath: String { get }
@@ -21,7 +23,7 @@ public protocol HybridAnvilRecorderSpec_protocol: HybridObject {
   func resume() throws -> Promise<Void>
   func stop() throws -> Promise<[RecordingSegment]>
   func rotateSegment() throws -> Promise<RecordingSegment>
-  func extractRange(startMs: Double, endMs: Double) throws -> Promise<String>
+  func markSegmentUploaded(filename: String) throws -> Promise<Void>
   func addPCMListener(listener: @escaping (_ chunk: PCMChunk) -> Void) throws -> AnvilListenerSubscription
   func addSpeakerWindowListener(listener: @escaping (_ window: SpeakerWindow) -> Void) throws -> AnvilListenerSubscription
   func addInterruptionListener(listener: @escaping (_ event: AnvilInterruptionEvent) -> Void) throws -> AnvilListenerSubscription
@@ -29,6 +31,7 @@ public protocol HybridAnvilRecorderSpec_protocol: HybridObject {
   func addPermissionChangeListener(listener: @escaping (_ status: AnvilPermissionStatus) -> Void) throws -> AnvilListenerSubscription
   func addStorageWarningListener(listener: @escaping (_ event: StorageWarningEvent) -> Void) throws -> AnvilListenerSubscription
   func addSegmentCompletedListener(listener: @escaping (_ segment: RecordingSegment) -> Void) throws -> AnvilListenerSubscription
+  func addManifestUpdatedListener(listener: @escaping (_ manifestPath: String) -> Void) throws -> AnvilListenerSubscription
   func addErrorListener(listener: @escaping (_ error: RecorderError) -> Void) throws -> AnvilListenerSubscription
 }
 

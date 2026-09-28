@@ -78,6 +78,7 @@ namespace margelo::nitro::audioanvil { enum class RecorderErrorCode; }
 #include "JFunc_void_StorageWarningEvent.hpp"
 #include "JStorageWarningEvent.hpp"
 #include "JFunc_void_RecordingSegment.hpp"
+#include "JFunc_void_std__string.hpp"
 #include "RecorderError.hpp"
 #include "JFunc_void_RecorderError.hpp"
 #include "JRecorderError.hpp"
@@ -114,8 +115,18 @@ namespace margelo::nitro::audioanvil {
   }
 
   // Properties
-  std::string JHybridAnvilRecorderSpec::getSessionId() {
-    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JString>()>("getSessionId");
+  std::string JHybridAnvilRecorderSpec::getRecordingId() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JString>()>("getRecordingId");
+    auto __result = method(_javaPart);
+    return __result->toStdString();
+  }
+  std::string JHybridAnvilRecorderSpec::getFolderPath() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JString>()>("getFolderPath");
+    auto __result = method(_javaPart);
+    return __result->toStdString();
+  }
+  std::string JHybridAnvilRecorderSpec::getManifestPath() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JString>()>("getManifestPath");
     auto __result = method(_javaPart);
     return __result->toStdString();
   }
@@ -222,14 +233,13 @@ namespace margelo::nitro::audioanvil {
       return __promise;
     }();
   }
-  std::shared_ptr<Promise<std::string>> JHybridAnvilRecorderSpec::extractRange(double startMs, double endMs) {
-    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(double /* startMs */, double /* endMs */)>("extractRange");
-    auto __result = method(_javaPart, startMs, endMs);
+  std::shared_ptr<Promise<void>> JHybridAnvilRecorderSpec::markSegmentUploaded(const std::string& filename) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<jni::JString> /* filename */)>("markSegmentUploaded");
+    auto __result = method(_javaPart, jni::make_jstring(filename));
     return [&]() {
-      auto __promise = Promise<std::string>::create();
-      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
-        auto __result = jni::static_ref_cast<jni::JString>(__boxedResult);
-        __promise->resolve(__result->toStdString());
+      auto __promise = Promise<void>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& /* unit */) {
+        __promise->resolve();
       });
       __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
         jni::JniException __jniError(__throwable);
@@ -271,6 +281,11 @@ namespace margelo::nitro::audioanvil {
   AnvilListenerSubscription JHybridAnvilRecorderSpec::addSegmentCompletedListener(const std::function<void(const RecordingSegment& /* segment */)>& listener) {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JAnvilListenerSubscription>(jni::alias_ref<JFunc_void_RecordingSegment::javaobject> /* listener */)>("addSegmentCompletedListener_cxx");
     auto __result = method(_javaPart, JFunc_void_RecordingSegment_cxx::fromCpp(listener));
+    return __result->toCpp();
+  }
+  AnvilListenerSubscription JHybridAnvilRecorderSpec::addManifestUpdatedListener(const std::function<void(const std::string& /* manifestPath */)>& listener) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JAnvilListenerSubscription>(jni::alias_ref<JFunc_void_std__string::javaobject> /* listener */)>("addManifestUpdatedListener_cxx");
+    auto __result = method(_javaPart, JFunc_void_std__string_cxx::fromCpp(listener));
     return __result->toCpp();
   }
   AnvilListenerSubscription JHybridAnvilRecorderSpec::addErrorListener(const std::function<void(const RecorderError& /* error */)>& listener) {

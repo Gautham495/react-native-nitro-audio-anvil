@@ -1,44 +1,67 @@
 package com.margelo.nitro.audioanvil
 
+import android.app.Application
 import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Process
+import android.os.StatFs
 import androidx.annotation.Keep
 import com.facebook.proguard.annotations.DoNotStrip
 import com.facebook.react.bridge.ReactApplicationContext
-import com.margelo.nitro.NitroModules
 import com.margelo.nitro.core.Promise
 import java.io.File
-import java.io.IOException
-import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.lifecycle.Lifecycle
-import android.util.Log
 
 /**
- * One recording session. All mutable state lives on the "anvil-audio" HandlerThread;
- * JS-facing methods hop onto it through `Handler.promise`, native callbacks are delivered on it.
+ * One recording. All mutable state lives on the recorder's `HandlerThread`; JS-facing
+ * methods hop onto it through `Handler.promise`, native callbacks are already delivered
+ * on it (both `AnvilAudioFocus` and `AnvilCaptureLoop` are constructed with the same
+ * Handler).
+ *
+ * The recorder owns `${outputDirectory}/${recordingId}/` and everything inside it. Live
+ * streams (PCM chunks, speaker windows) fan out first, synchronously; the AAC encode +
+ * segment write + manifest update run afterwards on the same thread. A disk stall
+ * never blocks the STT / embedder path.
  */
 @Keep
 @DoNotStrip
-class HybridAnvilRecorder(private val config: RecorderConfig) : HybridAnvilRecorderSpec() {
-  private val context: ReactApplicationContext
-    get() = NitroModules.applicationContext ?: throw AnvilException(RecorderErrorCode.STATE, "No ApplicationContext set!")
+class HybridAnvilRecorder(
+  private val context: ReactApplicationContext,
+  private val config: RecorderConfig,
+  seededSegments: List<RecordingSegment>,
+  seededNextIndex: Int,
+  seededMediaMs: Double,
+  resumingFromExisting: Boolean,
+) : HybridAnvilRecorderSpec() {
 
-  private val thread = HandlerThread("anvil-audio", Process.THREAD_PRIORITY_URGENT_AUDIO).apply { start() }
-  private val handler = Handler(thread.looper)
-  private val directory = AnvilPaths.directory(config.outputDirectory)
-  private val sampleRateHz = config.sampleRate.toInt()
+  private val thread: HandlerThread = HandlerThread("anvil-recorder", Process.THREAD_PRIORITY_AUDIO).also { it.start() }
+  private val handler: Handler = Handler(thread.looper)
 
-  private var focus: AnvilAudioFocus? = null
-  private var capture: AnvilCaptureLoop? = null
-  private var writer: WavSegmentWriter? = null
-  private val segments = ArrayList<RecordingSegment>()
-  private var nextSegmentIndex = 0
-  private var totalSamples = 0L
-  private var lastPermission = AnvilPermissionStatus.UNDETERMINED
-  private var lastInterruptionReason = AnvilInterruptionReason.OTHER
-  private var serviceRunning = false
+  private val outputDirectory: File = AnvilPaths.directory(config.outputDirectory)
+  private val folder: File = File(outputDirectory, config.recordingId)
+  private val sampleRateInt: Int = config.sampleRate.toInt()
+  private val focus = AnvilAudioFocus(context, handler)
+  private val capture = AnvilCaptureLoop(
+    handler = handler,
+    targetSampleRate = sampleRateInt,
+    readMs = maxOf(20, minOf(50, config.streamChunkMs.toInt())),
+    onPcm = { samples, count -> handlePcm(samples, count) },
+    onError = { error -> fail(error.code, error.message ?: "capture error") },
+  )
+  private val manifestWriter = HlsManifestWriter(
+    folder = folder,
+    targetDurationSeconds = Math.ceil(config.segmentDurationMs / 1000.0).toInt().coerceAtLeast(1),
+  )
+
+  private var encoder: AacEncoder? = null
+  private var writer: AacSegmentWriter? = null
+  private var segments: MutableList<RecordingSegment> = seededSegments.toMutableList()
+  private var nextSegmentIndex: Int = seededNextIndex
+  private var totalSamples: Long = (seededMediaMs / 1000.0 * sampleRateInt).toLong()
+  private var lastPermission: AnvilPermissionStatus = AnvilPermission.status(context, context.currentActivity)
+  private var lastInterruptionReason: AnvilInterruptionReason = AnvilInterruptionReason.OTHER
+  private var pendingDiscontinuityForResume: Boolean = resumingFromExisting
+  private var storageWarned: Boolean = false
 
   private val pcmListeners = ListenerRegistry<PCMChunk>()
   private val speakerListeners = ListenerRegistry<SpeakerWindow>()
@@ -47,221 +70,299 @@ class HybridAnvilRecorder(private val config: RecorderConfig) : HybridAnvilRecor
   private val permissionListeners = ListenerRegistry<AnvilPermissionStatus>()
   private val storageListeners = ListenerRegistry<StorageWarningEvent>()
   private val segmentListeners = ListenerRegistry<RecordingSegment>()
+  private val manifestListeners = ListenerRegistry<String>()
   private val errorListeners = ListenerRegistry<RecorderError>()
 
-  private val resumeRetryDelaysMs = longArrayOf(300L, 600L, 1200L, 2400L, 4800L)
+  private val chunker = PcmChunker(sampleRateInt, config.streamChunkMs) { chunk -> pcmListeners.emit(chunk) }
+  private val speakerWindows = SpeakerWindowAssembler(
+    sampleRate = sampleRateInt,
+    windowMs = config.speakerWindowMs,
+    hopMs = config.speakerWindowHopMs,
+  ) { window -> speakerListeners.emit(window) }
 
-  private val chunker = PcmChunker(sampleRateHz, config.streamChunkMs) { chunk -> pcmListeners.emit(chunk) }
-  private val speakerWindows = SpeakerWindowAssembler(sampleRateHz, config.speakerWindowMs, config.speakerWindowHopMs) { window ->
-    speakerListeners.emit(window)
+  private val resumeRetryDelaysMs: List<Long> = listOf(200L, 400L, 800L, 1600L, 3200L)
+
+  // MARK: - Spec properties
+
+  override val recordingId: String get() = config.recordingId
+  override val folderPath: String get() = folder.absolutePath
+  override val manifestPath: String get() = manifestWriter.manifestPath
+  override var state: RecorderState = RecorderState.IDLE
+    private set
+  override var totalDurationMs: Double = seededMediaMs
+    private set
+  override var currentSegmentPath: String = ""
+    private set
+
+  init {
+    focus.onInterruptionBegan = { reason -> handler.post { handleInterruptionBegan(reason) } }
+    focus.onInterruptionEnded = { shouldResume -> handler.post { handleInterruptionEnded(shouldResume) } }
+    focus.onRouteChanged = { reason, name ->
+      handler.post { handleRouteChanged(reason, name) }
+    }
   }
 
-  // Snapshots readable from the JS thread.
-  @Volatile private var stateValue = RecorderState.IDLE
-  @Volatile private var totalDurationValue = 0.0
-  @Volatile private var currentSegmentPathValue = ""
+    /**
+   * Seed the manifest writer with entries recovered from an existing unsealed manifest,
+   * so a resumed recording's appends land AFTER the earlier session's segments and
+   * seal() includes them. Called by the factory immediately after construction, before
+   * start(). Internal — same module as the factory, so it doesn't leak from the public
+   * Nitro surface.
+   */
+  internal fun seedManifest(entries: List<HlsManifestWriter.Entry>) {
+    if (entries.isNotEmpty()) {
+      manifestWriter.seed(existingEntries = entries, sealed = false)
+    }
+  }
 
-  override val sessionId: String = "anvil-${System.currentTimeMillis()}"
+  fun memorySize(): Long {
+    // One AAC encoder (a few hundred KB of native buffers) + the pending PCM ring +
+    // segment writer + chunker buffer. Order of magnitude is enough for the JS VM to
+    // account for the recorder under memory pressure.
+    return 1_500_000L
+  }
 
-  override val state: RecorderState
-    get() = stateValue
-
-  override val totalDurationMs: Double
-    get() = totalDurationValue
-
-  override val currentSegmentPath: String
-    get() = currentSegmentPathValue
-
-  // ---- Spec methods ----------------------------------------------------------------------------
+  // MARK: - Spec methods (JS thread → owner thread)
 
   override fun start(): Promise<Unit> = handler.promise { performStart() }
-
   override fun pause(): Promise<Unit> = handler.promise { performPause() }
-
   override fun resume(): Promise<Unit> = handler.promise { performResume() }
-
-  override fun stop(): Promise<Array<RecordingSegment>> = handler.promise { performStop() }
-
-  override fun rotateSegment(): Promise<RecordingSegment> = handler.promise { performRotate(routeChanged = false) }
-
-  override fun extractRange(startMs: Double, endMs: Double): Promise<String> {
-    if (thread.isAlive) {
-      return handler.promise { performExtract(startMs, endMs) }
-    }
-    return Promise.parallel { performExtract(startMs, endMs) }
+  override fun stop(): Promise<Array<RecordingSegment>> = handler.promise {
+    performStop().toTypedArray()
+  }
+  override fun rotateSegment(): Promise<RecordingSegment> = handler.promise {
+    performRotate(routeChanged = false)
+  }
+  override fun markSegmentUploaded(filename: String): Promise<Unit> = handler.promise {
+    UploadSentinelStore.mark(folder, filename)
   }
 
   override fun addPCMListener(listener: (PCMChunk) -> Unit): AnvilListenerSubscription = subscribe(pcmListeners, listener)
-
   override fun addSpeakerWindowListener(listener: (SpeakerWindow) -> Unit): AnvilListenerSubscription = subscribe(speakerListeners, listener)
-
   override fun addInterruptionListener(listener: (AnvilInterruptionEvent) -> Unit): AnvilListenerSubscription = subscribe(interruptionListeners, listener)
-
   override fun addRouteChangeListener(listener: (RouteChangeEvent) -> Unit): AnvilListenerSubscription = subscribe(routeListeners, listener)
-
   override fun addPermissionChangeListener(listener: (AnvilPermissionStatus) -> Unit): AnvilListenerSubscription = subscribe(permissionListeners, listener)
-
   override fun addStorageWarningListener(listener: (StorageWarningEvent) -> Unit): AnvilListenerSubscription = subscribe(storageListeners, listener)
-
   override fun addSegmentCompletedListener(listener: (RecordingSegment) -> Unit): AnvilListenerSubscription = subscribe(segmentListeners, listener)
-
+  override fun addManifestUpdatedListener(listener: (String) -> Unit): AnvilListenerSubscription = subscribe(manifestListeners, listener)
   override fun addErrorListener(listener: (RecorderError) -> Unit): AnvilListenerSubscription = subscribe(errorListeners, listener)
 
-  private fun <Event> subscribe(registry: ListenerRegistry<Event>, listener: (Event) -> Unit): AnvilListenerSubscription {
+  private fun <Event> subscribe(
+    registry: ListenerRegistry<Event>,
+    listener: (Event) -> Unit,
+  ): AnvilListenerSubscription {
     val id = registry.add(listener)
     return AnvilListenerSubscription(remove = { registry.remove(id) })
   }
 
-  // ---- Lifecycle (owner thread) ----------------------------------------------------------------
+  // MARK: - Lifecycle (owner thread)
 
   private fun performStart() {
-    if (stateValue != RecorderState.IDLE) {
-      throw AnvilException(RecorderErrorCode.STATE, "start() is only valid in idle state (now $stateValue)")
+    if (state != RecorderState.IDLE) {
+      throw AnvilException(RecorderErrorCode.STATE, "start() is only valid in idle state (now $state)")
     }
     checkPermission()
-    if (!directory.isDirectory && !directory.mkdirs()) {
-      throw AnvilException(RecorderErrorCode.IO, "Cannot create ${directory.absolutePath}")
+    if (!folder.exists() && !folder.mkdirs()) {
+      throw AnvilException(RecorderErrorCode.IO, "Cannot create ${folder.absolutePath}")
     }
-    OrphanScanner.markerFile(directory, sessionId).writeBytes(ByteArray(0))
-    startService()
-    checkStorage()
+    if (config.keepAwakeInBackground) {
+      val notif = config.notification
+        ?: throw AnvilException(RecorderErrorCode.STATE, "notification is required with keepAwakeInBackground")
+      AnvilRecordingService.start(context.applicationContext, notif.title, notif.text)
+    }
+    if (pendingDiscontinuityForResume) {
+      manifestWriter.markDiscontinuity()
+      pendingDiscontinuityForResume = false
+    }
     openSegment()
     startCapture()
-    stateValue = RecorderState.RECORDING
+    focus.acquire(capture.audioSessionId)
+    checkStorage()
+    state = RecorderState.RECORDING
   }
 
   private fun performPause() {
-    if (stateValue != RecorderState.RECORDING) {
-      throw AnvilException(RecorderErrorCode.STATE, "pause() is only valid while recording (now $stateValue)")
+    if (state != RecorderState.RECORDING) {
+      throw AnvilException(RecorderErrorCode.STATE, "pause() is only valid while recording (now $state)")
     }
-    stopCapture()
-    closeSegment(flushStreams = true)
-    stateValue = RecorderState.PAUSED
+    capture.stop()
+    focus.release()
+    closeSegment(flushStreams = true, flushEncoder = true)
+    state = RecorderState.PAUSED
   }
 
   private fun performResume() {
-    if (stateValue != RecorderState.PAUSED && stateValue != RecorderState.INTERRUPTED) {
-      throw AnvilException(RecorderErrorCode.STATE, "resume() is only valid from paused or interrupted (now $stateValue)")
+    if (state != RecorderState.PAUSED && state != RecorderState.INTERRUPTED) {
+      throw AnvilException(RecorderErrorCode.STATE, "resume() is only valid from paused or interrupted (now $state)")
     }
     checkPermission()
+    if (state == RecorderState.INTERRUPTED) {
+      manifestWriter.markDiscontinuity()
+    }
     openSegment()
     startCapture()
-    stateValue = RecorderState.RECORDING
+    focus.acquire(capture.audioSessionId)
+    state = RecorderState.RECORDING
   }
 
-  private fun performStop(): Array<RecordingSegment> {
-    if (stateValue == RecorderState.STOPPED) return segments.toTypedArray()
-    stopCapture()
-    focus?.release()
-    focus = null
+  private fun performStop(): List<RecordingSegment> {
+    if (state == RecorderState.STOPPED) return segments
+    capture.stop()
+    focus.release()
     if (writer != null) {
-      closeSegment(flushStreams = true)
+      closeSegment(flushStreams = true, flushEncoder = true)  // drains + releases encoder
+    } else {
+      // No open segment but an encoder may still exist (e.g. stopped while paused).
+      try { encoder?.release() } catch (_: Exception) {}
+      encoder = null
     }
-    stopService()
-    OrphanScanner.markerFile(directory, sessionId).delete()
-    stateValue = RecorderState.STOPPED
-    thread.quitSafely()
-    return segments.toTypedArray()
+    manifestWriter.seal()
+    manifestListeners.emit(manifestPath)
+    if (config.keepAwakeInBackground) {
+      AnvilRecordingService.stop(context.applicationContext)
+    }
+    state = RecorderState.STOPPED
+    return segments
   }
 
   private fun performRotate(routeChanged: Boolean): RecordingSegment {
-    val current = writer
-    if (stateValue != RecorderState.RECORDING || current == null) {
+    if (state != RecorderState.RECORDING || writer == null) {
       throw AnvilException(RecorderErrorCode.STATE, "rotateSegment() is only valid while recording")
     }
-    current.routeChanged = routeChanged
-    val finished = closeSegment(flushStreams = routeChanged)
+    writer!!.routeChanged = routeChanged
+    if (routeChanged) {
+      manifestWriter.markDiscontinuity()
+    }
+    val finished = closeSegment(flushStreams = routeChanged, flushEncoder = false)
     openSegment()
     checkStorage()
     return finished
   }
 
-  private fun performExtract(startMs: Double, endMs: Double): String {
-    val sources = ArrayList<RangeSource>()
-    for (segment in segments) {
-      sources.add(RangeSource(File(segment.filePath), segment.mediaStartMs, segment.fileSize.toInt() - WavHeader.BYTE_COUNT))
-    }
-    writer?.let {
-      it.flush()
-      sources.add(RangeSource(it.file, it.mediaStartMs, it.dataBytes))
-    }
-    val target = File(directory, "${sessionId}_extract_${startMs.toLong()}_${endMs.toLong()}.wav")
-    RangeExtractor.extract(sources, sampleRateHz, startMs, endMs, target)
-    return target.absolutePath
-  }
-
-  // ---- Segments (owner thread) -----------------------------------------------------------------
+  // MARK: - Segments
 
   private fun openSegment() {
-    val file = File(directory, "$sessionId-" + "%05d".format(nextSegmentIndex) + ".wav")
-    val mediaStartMs = totalSamples / sampleRateHz.toDouble() * 1000.0
-    writer = WavSegmentWriter(file, nextSegmentIndex, sampleRateHz, mediaStartMs, config.fsyncIntervalMs)
+   val filename = String.format("%05d.aac", nextSegmentIndex)
+    val file = File(folder, filename)
+    // Backstop: never open over an existing segment. If this fires, indexing is wrong
+    // upstream — fail loudly instead of truncating recorded audio.
+    if (file.exists()) {
+      throw AnvilException(RecorderErrorCode.STATE, "Refusing to overwrite existing segment $filename — index collision")
+    }
+    
+    val mediaStartMs = totalSamples.toDouble() / sampleRateInt.toDouble() * 1000.0
+    if (encoder == null) {
+      encoder = AacEncoder(sampleRate = sampleRateInt, bitrate = config.aacBitrate.toInt())
+    }
+    writer = AacSegmentWriter(
+      file = file,
+      index = nextSegmentIndex,
+      sampleRate = sampleRateInt,
+      mediaStartMs = mediaStartMs,
+      fsyncIntervalMs = config.fsyncIntervalMs,
+      aacBitrate = config.aacBitrate.toInt(),
+    )
     nextSegmentIndex++
-    currentSegmentPathValue = file.absolutePath
+    currentSegmentPath = file.absolutePath
   }
 
-  private fun closeSegment(flushStreams: Boolean): RecordingSegment {
+  /**
+   * Closes the current segment. `flushEncoder` drains the encoder (which on Android
+   * sends BUFFER_FLAG_END_OF_STREAM, silence-pads the tail, and kills the MediaCodec)
+   * AND releases it — do this ONLY at true end-of-capture (stop / pause / interruption
+   * / route change). At a plain time-based rotation pass `false`: the same MediaCodec
+   * keeps running and its <1024-sample tail rolls into the next segment. Draining at
+   * every rotation rebuilt the codec 10x/minute, re-priming its encoder delay each time
+   * — that is the robotic/static bug.
+   */
+  private fun closeSegment(flushStreams: Boolean, flushEncoder: Boolean): RecordingSegment {
     val current = writer ?: throw AnvilException(RecorderErrorCode.STATE, "No open segment")
     if (flushStreams) {
       chunker.flush()
       speakerWindows.reset()
     }
+
+    if (flushEncoder) {
+      val enc = encoder
+      if (enc != null) {
+        try {
+          for (frame in enc.drain()) {
+            current.append(frame)
+          }
+        } catch (e: Exception) {
+          current.abandon()
+          writer = null
+          currentSegmentPath = ""
+          try { enc.release() } catch (_: Exception) {}
+          encoder = null
+          throw AnvilException(RecorderErrorCode.IO, "Writing tail frame to ${current.file.name} failed: ${e.message}")
+        }
+        try { enc.release() } catch (_: Exception) {}
+        encoder = null
+      }
+    }
+
     writer = null
-    currentSegmentPathValue = ""
+    currentSegmentPath = ""
     val finished = try {
       current.complete()
-    } catch (e: IOException) {
+    } catch (e: Exception) {
       current.abandon()
       throw AnvilException(RecorderErrorCode.IO, "Finalizing ${current.file.name} failed: ${e.message}")
     }
     segments.add(finished)
     segmentListeners.emit(finished)
+    manifestWriter.appendSegment(filename = finished.filename, durationMs = finished.durationMs)
+    manifestListeners.emit(manifestPath)
     return finished
   }
 
-  // ---- Capture (owner thread) ------------------------------------------------------------------
+  // MARK: - Capture
 
   private fun startCapture() {
-    val loop = capture ?: AnvilCaptureLoop(
-      handler,
-      sampleRateHz,
-      config.streamChunkMs.toInt().coerceIn(20, 200),
-      ::handlePcm,
-      ::handleCaptureError,
-    ).also { capture = it }
-    loop.start()
-    val audioFocus = focus ?: AnvilAudioFocus(context, handler).also {
-      it.onInterruptionBegan = ::handleInterruptionBegan
-      it.onInterruptionEnded = ::handleInterruptionEnded
-      it.onRouteChanged = ::handleRouteChanged
-      focus = it
-    }
-    audioFocus.acquire(loop.audioSessionId)
-  }
-
-  private fun stopCapture() {
-    capture?.stop()
-  }
-
-  private fun handlePcm(samples: ShortArray, count: Int) {
-    if (stateValue != RecorderState.RECORDING) return
-    val current = writer ?: return
-    val startSamples = totalSamples
-    val bytes = samples.toLittleEndianBytes(count)
     try {
-      current.append(bytes, bytes.size)
-    } catch (e: IOException) {
-      val code = if (directory.usableSpace < 1_048_576L) RecorderErrorCode.STORAGE else RecorderErrorCode.IO
-      fail(code, "Writing ${current.file.name} failed: ${e.message}")
+      capture.start()
+    } catch (e: AnvilException) {
+      throw e
+    } catch (e: Exception) {
+      throw AnvilException(RecorderErrorCode.ENGINE, "Capture start failed: ${e.message}")
+    }
+  }
+
+  /**
+   * PCM fanout runs FIRST so STT and the speaker embedder never wait on encoding or
+   * disk. Media time advances after the fanout. Encoding + segment write happen last;
+   * their failure surfaces as `RecorderError` and stops capture, but the PCM chunk
+   * that triggered the failure has already reached the listeners.
+   */
+  private fun handlePcm(samples: ShortArray, count: Int) {
+    if (state != RecorderState.RECORDING) return
+    val bytes = samples.toLittleEndianBytes(count)
+
+    // 1. Fanout — synchronous, cheap.
+    chunker.append(bytes, bytes.size, totalSamples)
+    speakerWindows.append(samples, count, totalSamples)
+    totalSamples += count
+    totalDurationMs = totalSamples.toDouble() / sampleRateInt.toDouble() * 1000.0
+
+    // 2. Encode + write.
+    val currentWriter = writer
+    val currentEncoder = encoder
+    if (currentWriter == null || currentEncoder == null) return
+    try {
+      for (frame in currentEncoder.encode(samples, count)) {
+        currentWriter.append(frame)
+      }
+    } catch (e: Exception) {
+      val code = if (freeBytes() < 1_048_576) RecorderErrorCode.STORAGE else RecorderErrorCode.IO
+      fail(code, "Writing ${currentWriter.file.name} failed: ${e.message}")
       return
     }
-    totalSamples += count
-    totalDurationValue = totalSamples / sampleRateHz.toDouble() * 1000.0
-    chunker.append(bytes, bytes.size, startSamples)
-    speakerWindows.append(samples, count, startSamples)
-    if (current.durationMs >= config.segmentDurationMs) {
+
+    // 3. Time-based rotation. Does NOT flush the encoder — the tail rolls forward.
+    if (currentWriter.durationMs >= config.segmentDurationMs) {
       try {
-        closeSegment(flushStreams = false)
+        closeSegment(flushStreams = false, flushEncoder = false)
         openSegment()
         checkStorage()
       } catch (e: Exception) {
@@ -270,143 +371,78 @@ class HybridAnvilRecorder(private val config: RecorderConfig) : HybridAnvilRecor
     }
   }
 
-  private fun handleCaptureError(error: AnvilException) {
-    fail(error.code, error.message ?: "Capture failed")
-  }
-
-  // ---- Focus events (owner thread) -------------------------------------------------------------
+  // MARK: - Session events (owner thread)
 
   private fun handleInterruptionBegan(reason: AnvilInterruptionReason) {
-    if (stateValue != RecorderState.RECORDING) return
-    stopCapture()
+    if (state != RecorderState.RECORDING) return
+    capture.stop()
+    focus.release()
     writer?.wasInterrupted = true
     writer?.interruptionReason = reason
     lastInterruptionReason = reason
     var path = ""
     try {
-      path = closeSegment(flushStreams = true).filePath
-    } catch (e: AnvilException) {
+      path = closeSegment(flushStreams = true, flushEncoder = true).filePath
+    } catch (e: Exception) {
       emitError(RecorderErrorCode.IO, "Finalizing on interruption failed: ${e.message}")
     }
-    stateValue = RecorderState.INTERRUPTED
+    state = RecorderState.INTERRUPTED
     interruptionListeners.emit(
       AnvilInterruptionEvent(
         phase = AnvilInterruptionPhase.BEGAN,
         reason = reason,
         shouldResume = false,
         segmentPath = path,
-        timestampMs = totalDurationValue,
+        timestampMs = totalDurationMs,
       )
     )
   }
 
-// ────────────────────────────────────────────────────────────────────
-// Adds exponential backoff retry for AudioRecord.startRecording() when
-// another app (WhatsApp, etc.) hasn't fully released the microphone HAL
-// yet. In Android 16+ the HAL teardown is async — a stopRecorder in
-// another app returns before the hardware buffer is actually released,
-// so a race condition throws IllegalStateException or ERROR_INVALID_OPERATION.
-//
-// Only retries when app is in the foreground. Background retries are:
-//   1. Battery-wasteful — CPU spins on nothing
-//   2. Often futile — some OEM ROMs (Xiaomi, Vivo) kill background mic
-//      access aggressively
-//   3. User-invisible — no way to signal progress
-//
-// Retry schedule: 300ms, 600ms, 1200ms, 2400ms, 4800ms → give up (~9.3s total).
-// The 300ms floor comes from the react-native-audio-recorder-player
-// community fix documented for the Android 16 HAL race.
-// ────────────────────────────────────────────────────────────────────
+  private fun handleInterruptionEnded(shouldResume: Boolean) {
+    if (state != RecorderState.INTERRUPTED) return
 
-
-
-private fun handleInterruptionEnded(shouldResume: Boolean) {
-  if (stateValue != RecorderState.INTERRUPTED) return
-  interruptionListeners.emit(
-    AnvilInterruptionEvent(
-      phase = AnvilInterruptionPhase.ENDED,
-      reason = lastInterruptionReason,
-      shouldResume = shouldResume,
-      segmentPath = "",
-      timestampMs = totalDurationValue,
+    interruptionListeners.emit(
+      AnvilInterruptionEvent(
+        phase = AnvilInterruptionPhase.ENDED,
+        reason = lastInterruptionReason,
+        shouldResume = shouldResume,
+        segmentPath = "",
+        timestampMs = totalDurationMs,
+      )
     )
-  )
-  if (config.onInterruption != InterruptionPolicy.RESUME || !shouldResume) return
-
-  // Foreground check via ProcessLifecycleOwner. Faster than polling
-  // Activity lifecycle callbacks and works across single/multi-activity apps.
-  // Requires: implementation "androidx.lifecycle:lifecycle-process:2.7.0"
-  // (or newer) in the module's build.gradle.
-  if (!isAppForeground()) {
-    Log.i("Anvil", "auto-resume skipped — app is not foreground")
-    emitError(
-      RecorderErrorCode.ENGINE,
-      "Auto-resume deferred — bring app to foreground to continue"
-    )
-    return
+    if (config.onInterruption != InterruptionPolicy.RESUME || !shouldResume) return
+    attemptResumeWithBackoff(0)
   }
 
-  attemptResumeWithBackoff(attempt = 0)
-}
-
-private fun isAppForeground(): Boolean {
-  // Must be called on main thread. Wrap with a sync check since we're on
-  // the anvil-audio HandlerThread.
-  val latch = java.util.concurrent.CountDownLatch(1)
-  var foreground = false
-  Handler(android.os.Looper.getMainLooper()).post {
-    foreground = ProcessLifecycleOwner.get().lifecycle.currentState
-      .isAtLeast(Lifecycle.State.STARTED)
-    latch.countDown()
-  }
-  latch.await(200L, java.util.concurrent.TimeUnit.MILLISECONDS)
-  return foreground
-}
-
-private fun attemptResumeWithBackoff(attempt: Int) {
-  try {
-    performResume()
-    Log.i("Anvil", "auto-resume succeeded on attempt ${attempt + 1}")
-  } catch (e: Exception) {
-    if (attempt >= resumeRetryDelaysMs.size) {
-      Log.w(
-        "Anvil",
-        "auto-resume gave up after ${resumeRetryDelaysMs.size} attempts: ${e.message}"
-      )
-      emitError(
-        RecorderErrorCode.ENGINE,
-        "Auto-resume failed after ${resumeRetryDelaysMs.size} attempts: ${e.message}"
-      )
-      return
-    }
-
-    val delay = resumeRetryDelaysMs[attempt]
-    Log.i(
-      "Anvil",
-      "auto-resume attempt ${attempt + 1} failed (${e.message}) — retrying in ${delay}ms"
-    )
-
-    // Schedule the retry on our own owner thread. Before each attempt,
-    // re-check foreground — user may have backgrounded us in the
-    // interim, in which case further retries just waste CPU and battery.
-    handler.postDelayed({
-      if (!isAppForeground()) {
-        Log.i("Anvil", "app backgrounded mid-retry — giving up")
+  private fun attemptResumeWithBackoff(attempt: Int) {
+    try {
+      performResume()
+    } catch (e: Exception) {
+      if (attempt >= resumeRetryDelaysMs.size) {
         emitError(
           RecorderErrorCode.ENGINE,
-          "Auto-resume abandoned — app was backgrounded during retry"
+          "Auto-resume failed after ${resumeRetryDelaysMs.size} attempts: ${e.message}"
         )
-        return@postDelayed
+        return
       }
-      attemptResumeWithBackoff(attempt + 1)
-    }, delay)
+      val delay = resumeRetryDelaysMs[attempt]
+      handler.postDelayed({ attemptResumeWithBackoff(attempt + 1) }, delay)
+    }
   }
-}
 
   private fun handleRouteChanged(reason: RouteChangeReason, inputName: String) {
-    val recording = stateValue == RecorderState.RECORDING
-    routeListeners.emit(RouteChangeEvent(reason = reason, inputName = inputName, inputChanged = recording, timestampMs = totalDurationValue))
-    if (!recording) return
+    // Android's route callbacks don't tell us if the ACTIVE input actually swapped —
+    // they only fire on device connect/disconnect. We rotate on any input-side change,
+    // matching what a user would expect (segments never mix headphones + built-in mic).
+    routeListeners.emit(
+      RouteChangeEvent(
+        reason = reason,
+        inputName = inputName,
+        inputChanged = true,
+        timestampMs = totalDurationMs,
+      )
+    )
+    if (state != RecorderState.RECORDING) return
     try {
       performRotate(routeChanged = true)
     } catch (e: Exception) {
@@ -414,20 +450,7 @@ private fun attemptResumeWithBackoff(attempt: Int) {
     }
   }
 
-  // ---- Service, checks and failure (owner thread) ----------------------------------------------
-
-  private fun startService() {
-    if (!config.keepAwakeInBackground || serviceRunning) return
-    val notification = config.notification ?: throw AnvilException(RecorderErrorCode.STATE, "notification is required when keepAwakeInBackground is true")
-    AnvilRecordingService.start(context, notification.title, notification.text)
-    serviceRunning = true
-  }
-
-  private fun stopService() {
-    if (!serviceRunning) return
-    AnvilRecordingService.stop(context)
-    serviceRunning = false
-  }
+  // MARK: - Checks and failure
 
   private fun checkPermission() {
     val status = AnvilPermission.status(context, context.currentActivity)
@@ -441,36 +464,63 @@ private fun attemptResumeWithBackoff(attempt: Int) {
   }
 
   private fun checkStorage() {
-    val free = directory.usableSpace.toDouble()
-    if (free < config.storageWarningBytes) {
-      storageListeners.emit(StorageWarningEvent(freeBytes = free, thresholdBytes = config.storageWarningBytes))
+    val free = freeBytes()
+    val below = free < config.storageWarningBytes
+    if (below && !storageWarned) {
+      storageWarned = true
+      storageListeners.emit(StorageWarningEvent(freeBytes = free.toDouble(), thresholdBytes = config.storageWarningBytes))
+    } else if (!below) {
+      storageWarned = false
     }
   }
 
-  /** Stops capture, secures whatever is on disk, moves to `interrupted` and reports the error. */
+  private fun freeBytes(): Long {
+    return try {
+      val stat = StatFs(folder.absolutePath.takeIf { folder.exists() } ?: folder.parent!!)
+      stat.availableBytes
+    } catch (_: Exception) {
+      Long.MAX_VALUE
+    }
+  }
+
+  /**
+   * Stops capture, secures whatever's on disk, moves to `interrupted` and reports the
+   * error. The unsealed manifest reflects the last successfully-finalized segment;
+   * discovery on next launch picks it up.
+   */
   private fun fail(code: RecorderErrorCode, message: String) {
-    stopCapture()
-    val current = writer
-    if (current != null) {
+    capture.stop()
+    focus.release()
+    val currentWriter = writer
+    if (currentWriter != null) {
       writer = null
-      currentSegmentPathValue = ""
+      currentSegmentPath = ""
       chunker.flush()
       speakerWindows.reset()
-      try {
-        val finished = current.complete()
+      val finished = try {
+        currentWriter.complete()
+      } catch (_: Exception) {
+        currentWriter.abandon()
+        null
+      }
+      if (finished != null) {
         segments.add(finished)
         segmentListeners.emit(finished)
-      } catch (_: IOException) {
-        current.abandon()
+        try {
+          manifestWriter.appendSegment(filename = finished.filename, durationMs = finished.durationMs)
+          manifestListeners.emit(manifestPath)
+        } catch (_: Exception) {}
       }
     }
-    if (stateValue == RecorderState.RECORDING) {
-      stateValue = RecorderState.INTERRUPTED
+    try { encoder?.release() } catch (_: Exception) {}
+    encoder = null
+    if (state == RecorderState.RECORDING) {
+      state = RecorderState.INTERRUPTED
     }
     emitError(code, message)
   }
 
   private fun emitError(code: RecorderErrorCode, message: String) {
-    errorListeners.emit(RecorderError(code = code, message = message, timestampMs = totalDurationValue))
+    errorListeners.emit(RecorderError(code = code, message = message, timestampMs = totalDurationMs))
   }
 }

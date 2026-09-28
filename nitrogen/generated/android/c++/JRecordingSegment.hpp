@@ -36,6 +36,8 @@ namespace margelo::nitro::audioanvil {
       static const auto clazz = javaClassStatic();
       static const auto fieldIndex = clazz->getField<double>("index");
       double index = this->getFieldValue(fieldIndex);
+      static const auto fieldFilename = clazz->getField<jni::JString>("filename");
+      jni::local_ref<jni::JString> filename = this->getFieldValue(fieldFilename);
       static const auto fieldFilePath = clazz->getField<jni::JString>("filePath");
       jni::local_ref<jni::JString> filePath = this->getFieldValue(fieldFilePath);
       static const auto fieldSampleRate = clazz->getField<double>("sampleRate");
@@ -60,6 +62,7 @@ namespace margelo::nitro::audioanvil {
       jni::local_ref<jni::JString> sha256 = this->getFieldValue(fieldSha256);
       return RecordingSegment(
         index,
+        filename->toStdString(),
         filePath->toStdString(),
         sampleRate,
         durationMs,
@@ -80,12 +83,13 @@ namespace margelo::nitro::audioanvil {
      */
     [[maybe_unused]]
     static jni::local_ref<JRecordingSegment::javaobject> fromCpp(const RecordingSegment& value) {
-      using JSignature = JRecordingSegment(double, jni::alias_ref<jni::JString>, double, double, double, double, double, double, jboolean, jni::alias_ref<JAnvilInterruptionReason>, jboolean, jni::alias_ref<jni::JString>);
+      using JSignature = JRecordingSegment(double, jni::alias_ref<jni::JString>, jni::alias_ref<jni::JString>, double, double, double, double, double, double, jboolean, jni::alias_ref<JAnvilInterruptionReason>, jboolean, jni::alias_ref<jni::JString>);
       static const auto clazz = javaClassStatic();
       static const auto create = clazz->getStaticMethod<JSignature>("fromCpp");
       return create(
         clazz,
         value.index,
+        jni::make_jstring(value.filename),
         jni::make_jstring(value.filePath),
         value.sampleRate,
         value.durationMs,

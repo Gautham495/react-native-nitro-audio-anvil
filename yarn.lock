@@ -2707,6 +2707,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-clipboard/clipboard@npm:1.16.3":
+  version: 1.16.3
+  resolution: "@react-native-clipboard/clipboard@npm:1.16.3"
+  peerDependencies:
+    react: ">= 16.9.0"
+    react-native: ">= 0.61.5"
+    react-native-macos: ">= 0.61.0"
+    react-native-windows: ">= 0.61.0"
+  peerDependenciesMeta:
+    react-native-macos:
+      optional: true
+    react-native-windows:
+      optional: true
+  checksum: 10c0/4e6478a3dfc8862f93dd47790d1357082966c59bc6624f58a2281f3de4e7dfd57a4655e16f6c0310e46924eac654558b88fb726187c19ed3fc47c67235a1ae07
+  languageName: node
+  linkType: hard
+
 "@react-native-community/cli-clean@npm:20.1.0":
   version: 20.1.0
   resolution: "@react-native-community/cli-clean@npm:20.1.0"
@@ -3681,6 +3698,133 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@videojs/core@npm:10.0.0-rc.4":
+  version: 10.0.0-rc.4
+  resolution: "@videojs/core@npm:10.0.0-rc.4"
+  dependencies:
+    "@videojs/media": "npm:10.0.0-rc.4"
+    "@videojs/store": "npm:10.0.0-rc.4"
+    "@videojs/utils": "npm:10.0.0-rc.4"
+  checksum: 10c0/d799171c52ff8abd095625c1fb96ead502c5f56f481da3fa5883a268443b6b2ba635d808dbfe32e634b14616b16a815f52cf3ebfd1e455a1649e4115e69ac386
+  languageName: node
+  linkType: hard
+
+"@videojs/media@npm:10.0.0-rc.4":
+  version: 10.0.0-rc.4
+  resolution: "@videojs/media@npm:10.0.0-rc.4"
+  dependencies:
+    "@videojs/utils": "npm:10.0.0-rc.4"
+  checksum: 10c0/48319453b8d858cff08f2a1a995c8ce0e73435ddfaa93d4be57cb8a982e7cb08428413bcb5d591f3ca01ec82c69d6528fe2944113600e4161aee44a13961a4d3
+  languageName: node
+  linkType: hard
+
+"@videojs/native-hls-video@npm:10.0.0-rc.4":
+  version: 10.0.0-rc.4
+  resolution: "@videojs/native-hls-video@npm:10.0.0-rc.4"
+  dependencies:
+    "@videojs/media": "npm:10.0.0-rc.4"
+    "@videojs/utils": "npm:10.0.0-rc.4"
+  checksum: 10c0/8d13871387d6139a1877b6a46a14729eaa7a3e5d9605d823bf02eca6217e0f64372911cdd10589686dde6943dfe89eea02f8fd2d72a0923f670cfdc924a981f7
+  languageName: node
+  linkType: hard
+
+"@videojs/react@npm:^10.0.0-beta.11":
+  version: 10.0.0-rc.4
+  resolution: "@videojs/react@npm:10.0.0-rc.4"
+  dependencies:
+    "@videojs/core": "npm:10.0.0-rc.4"
+    "@videojs/media": "npm:10.0.0-rc.4"
+    "@videojs/native-hls-video": "npm:10.0.0-rc.4"
+    "@videojs/spf": "npm:10.0.0-rc.4"
+    "@videojs/store": "npm:10.0.0-rc.4"
+    "@videojs/utils": "npm:10.0.0-rc.4"
+    react-compiler-runtime: "npm:^1.0.0"
+  peerDependencies:
+    "@videojs/cloudflare-video": 10.0.0-rc.4
+    "@videojs/dash-video": 10.0.0-rc.4
+    "@videojs/google-cast": 10.0.0-rc.4
+    "@videojs/hlsjs-video": 10.0.0-rc.4
+    "@videojs/mux-audio": 10.0.0-rc.4
+    "@videojs/mux-data": 10.0.0-rc.4
+    "@videojs/mux-video": 10.0.0-rc.4
+    "@videojs/shaka-video": 10.0.0-rc.4
+    "@videojs/spotify-audio": 10.0.0-rc.4
+    "@videojs/tiktok-video": 10.0.0-rc.4
+    "@videojs/twitch-video": 10.0.0-rc.4
+    "@videojs/vimeo-video": 10.0.0-rc.4
+    "@videojs/wistia-video": 10.0.0-rc.4
+    "@videojs/youtube-video": 10.0.0-rc.4
+    react: ^18.0.0 || ^19.0.0
+    react-dom: ^18.0.0 || ^19.0.0
+  peerDependenciesMeta:
+    "@videojs/cloudflare-video":
+      optional: true
+    "@videojs/dash-video":
+      optional: true
+    "@videojs/google-cast":
+      optional: true
+    "@videojs/hlsjs-video":
+      optional: true
+    "@videojs/mux-audio":
+      optional: true
+    "@videojs/mux-data":
+      optional: true
+    "@videojs/mux-video":
+      optional: true
+    "@videojs/shaka-video":
+      optional: true
+    "@videojs/spotify-audio":
+      optional: true
+    "@videojs/tiktok-video":
+      optional: true
+    "@videojs/twitch-video":
+      optional: true
+    "@videojs/vimeo-video":
+      optional: true
+    "@videojs/wistia-video":
+      optional: true
+    "@videojs/youtube-video":
+      optional: true
+  checksum: 10c0/4e1786ea9d9052ca452a4801f548c45a278de202fd239f1bc47bc37b1e3d4fd2abea9d060edc7bcd22460efef9923821365bb95ec1e171cf04966c8aa9ad645a
+  languageName: node
+  linkType: hard
+
+"@videojs/spf@npm:10.0.0-rc.4":
+  version: 10.0.0-rc.4
+  resolution: "@videojs/spf@npm:10.0.0-rc.4"
+  dependencies:
+    "@videojs/media": "npm:10.0.0-rc.4"
+    "@videojs/utils": "npm:10.0.0-rc.4"
+    signal-polyfill: "npm:^0.2.2"
+  checksum: 10c0/c2299844eefd5d8e8032e2986e287efd28ddefca57151e585a655b9bd9c5213e545da0ed22bba45714e37adb73ad61a7b414c6fbd2c9ce3d87e60421b5dc3f17
+  languageName: node
+  linkType: hard
+
+"@videojs/store@npm:10.0.0-rc.4":
+  version: 10.0.0-rc.4
+  resolution: "@videojs/store@npm:10.0.0-rc.4"
+  dependencies:
+    "@videojs/utils": "npm:10.0.0-rc.4"
+    react-compiler-runtime: "npm:^1.0.0"
+  peerDependencies:
+    "@videojs/element": 10.0.0-rc.4
+    react: ^18.0.0 || ^19.0.0
+  peerDependenciesMeta:
+    "@videojs/element":
+      optional: true
+    react:
+      optional: true
+  checksum: 10c0/ead843cdec55f2eb20eaf4bb3679cd2067325b887c3a8cb5c36013b8685423dc802ee23e492cd55ba35c1b94c8855b4b1597ddd75287c069d4191bd951acc864
+  languageName: node
+  linkType: hard
+
+"@videojs/utils@npm:10.0.0-rc.4":
+  version: 10.0.0-rc.4
+  resolution: "@videojs/utils@npm:10.0.0-rc.4"
+  checksum: 10c0/5f2be3000ea8303c8f3addad14836077b6f6817d2d87708a57f5b122b91dd3cb172ac209b424e743d7c81dc92672604f1ccde0581bea2e420d287ce01ad71cc6
+  languageName: node
+  linkType: hard
+
 "@vitejs/plugin-react@npm:^5.0.0":
   version: 5.2.0
   resolution: "@vitejs/plugin-react@npm:5.2.0"
@@ -3701,6 +3845,13 @@ __metadata:
   version: 9.3.2
   resolution: "@vscode/sudo-prompt@npm:9.3.2"
   checksum: 10c0/9cf63f7001f31ada248aefe0d289e8769d82d9eeb12845aef863faf44620cbe620897625af4e160ab1c2a684d88247a0dbaead0d9a9447a5807feb4a4fd47016
+  languageName: node
+  linkType: hard
+
+"@yarnpkg/lockfile@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@yarnpkg/lockfile@npm:1.1.0"
+  checksum: 10c0/0bfa50a3d756623d1f3409bc23f225a1d069424dbc77c6fd2f14fb377390cd57ec703dc70286e081c564be9051ead9ba85d81d66a3e68eeb6eb506d4e0c0fbda
   languageName: node
   linkType: hard
 
@@ -4503,7 +4654,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:^4.0.0, chalk@npm:^4.1.0":
+"chalk@npm:^4.0.0, chalk@npm:^4.1.0, chalk@npm:^4.1.2":
   version: 4.1.2
   resolution: "chalk@npm:4.1.2"
   dependencies:
@@ -4584,7 +4735,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ci-info@npm:^3.2.0":
+"ci-info@npm:^3.2.0, ci-info@npm:^3.7.0":
   version: 3.9.0
   resolution: "ci-info@npm:3.9.0"
   checksum: 10c0/6f0109e36e111684291d46123d491bc4e7b7a1934c3a20dea28cba89f1d4a03acd892f5f6a81ed3855c38647e285a150e3c9ba062e38943bef57fee6c1554c3a
@@ -6286,6 +6437,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"find-yarn-workspace-root@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "find-yarn-workspace-root@npm:2.0.0"
+  dependencies:
+    micromatch: "npm:^4.0.2"
+  checksum: 10c0/b0d3843013fbdaf4e57140e0165889d09fa61745c9e85da2af86e54974f4cc9f1967e40f0d8fc36a79d53091f0829c651d06607d552582e53976f3cd8f4e5689
+  languageName: node
+  linkType: hard
+
 "flat-cache@npm:^4.0.0":
   version: 4.0.1
   resolution: "flat-cache@npm:4.0.1"
@@ -6323,6 +6483,17 @@ __metadata:
   version: 0.5.2
   resolution: "fresh@npm:0.5.2"
   checksum: 10c0/c6d27f3ed86cc5b601404822f31c900dd165ba63fff8152a3ef714e2012e7535027063bc67ded4cb5b3a49fa596495d46cacd9f47d6328459cf570f08b7d9e5a
+  languageName: node
+  linkType: hard
+
+"fs-extra@npm:^10.0.0":
+  version: 10.1.0
+  resolution: "fs-extra@npm:10.1.0"
+  dependencies:
+    graceful-fs: "npm:^4.2.0"
+    jsonfile: "npm:^6.0.1"
+    universalify: "npm:^2.0.0"
+  checksum: 10c0/5f579466e7109719d162a9249abbeffe7f426eb133ea486e020b89bc6d67a741134076bf439983f2eb79276ceaf6bd7b7c1e43c3fd67fe889863e69072fb0a5e
   languageName: node
   linkType: hard
 
@@ -6625,7 +6796,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graceful-fs@npm:^4.1.3, graceful-fs@npm:^4.1.6, graceful-fs@npm:^4.2.0, graceful-fs@npm:^4.2.4, graceful-fs@npm:^4.2.6, graceful-fs@npm:^4.2.9":
+"graceful-fs@npm:^4.1.11, graceful-fs@npm:^4.1.3, graceful-fs@npm:^4.1.6, graceful-fs@npm:^4.2.0, graceful-fs@npm:^4.2.4, graceful-fs@npm:^4.2.6, graceful-fs@npm:^4.2.9":
   version: 4.2.11
   resolution: "graceful-fs@npm:4.2.11"
   checksum: 10c0/386d011a553e02bc594ac2ca0bd6d9e4c22d7fa8cfbfc448a6d148c59ea881b092db9dbe3547ae4b88e55f1b01f7c4a2ecc53b310c042793e63aa44cf6c257f2
@@ -8030,6 +8201,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"json-stable-stringify@npm:^1.0.2":
+  version: 1.3.0
+  resolution: "json-stable-stringify@npm:1.3.0"
+  dependencies:
+    call-bind: "npm:^1.0.8"
+    call-bound: "npm:^1.0.4"
+    isarray: "npm:^2.0.5"
+    jsonify: "npm:^0.0.1"
+    object-keys: "npm:^1.1.1"
+  checksum: 10c0/8b3ff19e4c23c0ad591a49bc3a015d89a538db787d12fe9c4072e1d64d8cfa481f8c37719c629c3d84e848847617bf49f5fee894cf1d25959ab5b67e1c517f31
+  languageName: node
+  linkType: hard
+
 "json-with-bigint@npm:^3.5.12":
   version: 3.5.12
   resolution: "json-with-bigint@npm:3.5.12"
@@ -8071,6 +8255,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jsonify@npm:^0.0.1":
+  version: 0.0.1
+  resolution: "jsonify@npm:0.0.1"
+  checksum: 10c0/7f5499cdd59a0967ed35bda48b7cec43d850bbc8fb955cdd3a1717bb0efadbe300724d5646de765bb7a99fc1c3ab06eb80d93503c6faaf99b4ff50a3326692f6
+  languageName: node
+  linkType: hard
+
 "jsx-ast-utils@npm:^2.4.1 || ^3.0.0":
   version: 3.3.5
   resolution: "jsx-ast-utils@npm:3.3.5"
@@ -8089,6 +8280,15 @@ __metadata:
   dependencies:
     json-buffer: "npm:3.0.1"
   checksum: 10c0/aa52f3c5e18e16bb6324876bb8b59dd02acf782a4b789c7b2ae21107fab95fab3890ed448d4f8dba80ce05391eeac4bfabb4f02a20221342982f806fa2cf271e
+  languageName: node
+  linkType: hard
+
+"klaw-sync@npm:^6.0.0":
+  version: 6.0.0
+  resolution: "klaw-sync@npm:6.0.0"
+  dependencies:
+    graceful-fs: "npm:^4.1.11"
+  checksum: 10c0/00d8e4c48d0d699b743b3b028e807295ea0b225caf6179f51029e19783a93ad8bb9bccde617d169659fbe99559d73fb35f796214de031d0023c26b906cecd70a
   languageName: node
   linkType: hard
 
@@ -8720,7 +8920,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"micromatch@npm:^4.0.4, micromatch@npm:^4.0.8":
+"micromatch@npm:^4.0.2, micromatch@npm:^4.0.4, micromatch@npm:^4.0.8":
   version: 4.0.8
   resolution: "micromatch@npm:4.0.8"
   dependencies:
@@ -8812,7 +9012,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minimist@npm:^1.2.5":
+"minimist@npm:^1.2.5, minimist@npm:^1.2.6":
   version: 1.2.8
   resolution: "minimist@npm:1.2.8"
   checksum: 10c0/19d3fcdca050087b84c2029841a093691a91259a47def2f18222f41e7645a0b7c44ef4b40e88a1e58a40c84d2ef0ee6047c55594d298146d0eb3f6b737c20ce6
@@ -9220,7 +9420,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"open@npm:^7.0.3":
+"open@npm:^7.0.3, open@npm:^7.4.2":
   version: 7.4.2
   resolution: "open@npm:7.4.2"
   dependencies:
@@ -9421,6 +9621,30 @@ __metadata:
   version: 1.3.3
   resolution: "parseurl@npm:1.3.3"
   checksum: 10c0/90dd4760d6f6174adb9f20cf0965ae12e23879b5f5464f38e92fce8073354341e4b3b76fa3d878351efe7d01e617121955284cfd002ab087fba1a0726ec0b4f5
+  languageName: node
+  linkType: hard
+
+"patch-package@npm:^8.0.1":
+  version: 8.0.1
+  resolution: "patch-package@npm:8.0.1"
+  dependencies:
+    "@yarnpkg/lockfile": "npm:^1.1.0"
+    chalk: "npm:^4.1.2"
+    ci-info: "npm:^3.7.0"
+    cross-spawn: "npm:^7.0.3"
+    find-yarn-workspace-root: "npm:^2.0.0"
+    fs-extra: "npm:^10.0.0"
+    json-stable-stringify: "npm:^1.0.2"
+    klaw-sync: "npm:^6.0.0"
+    minimist: "npm:^1.2.6"
+    open: "npm:^7.4.2"
+    semver: "npm:^7.5.3"
+    slash: "npm:^2.0.0"
+    tmp: "npm:^0.2.4"
+    yaml: "npm:^2.2.2"
+  bin:
+    patch-package: index.js
+  checksum: 10c0/6dd7cdd8b814902f1a66bc9082bd5a5a484956563538a694ff1de2e7f4cc14a13480739f5f04e0d1747395d6f1b651eb1ddbc39687ce5ff8a3927f212cffd2ac
   languageName: node
   linkType: hard
 
@@ -9736,6 +9960,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-compiler-runtime@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "react-compiler-runtime@npm:1.0.0"
+  peerDependencies:
+    react: ^17.0.0 || ^18.0.0 || ^19.0.0 || ^0.0.0-experimental
+  checksum: 10c0/e081192380ae32d18bebaf341071ae8aecf80f4401b188f80e4b77e8d8995bb4c7175b8c3f75e8307019eac2015edf45c7999f788dcfcd99fdbe2ba9a2d465a4
+  languageName: node
+  linkType: hard
+
 "react-devtools-core@npm:^6.1.5":
   version: 6.1.5
   resolution: "react-devtools-core@npm:6.1.5"
@@ -9771,7 +10004,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-blob-util@npm:^0.24.10":
+"react-native-blob-util@npm:0.24.10":
   version: 0.24.10
   resolution: "react-native-blob-util@npm:0.24.10"
   dependencies:
@@ -9833,6 +10066,7 @@ __metadata:
     "@babel/core": "npm:^7.25.2"
     "@babel/preset-env": "npm:^7.25.3"
     "@babel/runtime": "npm:^7.25.0"
+    "@react-native-clipboard/clipboard": "npm:1.16.3"
     "@react-native-community/cli": "npm:20.1.0"
     "@react-native-community/cli-platform-android": "npm:20.1.0"
     "@react-native-community/cli-platform-ios": "npm:20.1.0"
@@ -9842,16 +10076,17 @@ __metadata:
     "@react-native/typescript-config": "npm:0.85.0"
     "@types/react": "npm:^19.2.0"
     "@vitejs/plugin-react": "npm:^5.0.0"
+    patch-package: "npm:^8.0.1"
     react: "npm:19.2.3"
     react-dom: "npm:19.2.3"
     react-native: "npm:0.85.3"
-    react-native-blob-util: "npm:^0.24.10"
+    react-native-blob-util: "npm:0.24.10"
     react-native-builder-bob: "npm:^0.43.0"
     react-native-monorepo-config: "npm:^0.4.0"
-    react-native-nitro-cloud-uploader: "npm:^2.0.1"
-    react-native-nitro-modules: "npm:^0.37.1"
-    react-native-nitro-player: "npm:^1.6.1"
+    react-native-nitro-cloud-uploader: "npm:2.0.1"
+    react-native-nitro-modules: "npm:0.37.1"
     react-native-share: "npm:12.0.11"
+    react-native-video: "npm:7.0.0-beta.11"
   languageName: unknown
   linkType: soft
 
@@ -9893,7 +10128,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"react-native-nitro-cloud-uploader@npm:^2.0.1":
+"react-native-nitro-cloud-uploader@npm:2.0.1":
   version: 2.0.1
   resolution: "react-native-nitro-cloud-uploader@npm:2.0.1"
   peerDependencies:
@@ -9904,7 +10139,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-nitro-modules@npm:^0.37.1":
+"react-native-nitro-modules@npm:0.37.1, react-native-nitro-modules@npm:^0.37.1":
   version: 0.37.1
   resolution: "react-native-nitro-modules@npm:0.37.1"
   peerDependencies:
@@ -9914,21 +10149,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-nitro-player@npm:^1.6.1":
-  version: 1.6.1
-  resolution: "react-native-nitro-player@npm:1.6.1"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-    react-native-nitro-modules: "*"
-  checksum: 10c0/a482757ad6d378f8a7131ff40e9d67a4de8fea517cc2688a33226950261d25779715b02e4a3b33f33680e975120df99e5a5db6116c5ec65164fe3c093989e73b
-  languageName: node
-  linkType: hard
-
 "react-native-share@npm:12.0.11":
   version: 12.0.11
   resolution: "react-native-share@npm:12.0.11"
   checksum: 10c0/14302210055dd74e0e2d8158c2d40ecc92cc629616bdcc65817f4ccb233260608dc2aca47b5995e4103b07fea23e5f09b93476d9fc9456e22eebf4694dc9e879
+  languageName: node
+  linkType: hard
+
+"react-native-video@npm:7.0.0-beta.11":
+  version: 7.0.0-beta.11
+  resolution: "react-native-video@npm:7.0.0-beta.11"
+  dependencies:
+    "@videojs/react": "npm:^10.0.0-beta.11"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+    react-native-nitro-modules: ">=0.35.0"
+  checksum: 10c0/6b2487589394c9d81b2ec1a8b09ef0215729ec2a7b8387aa5422570102533b6117865f3c6a51b176dfce6ac02204ae1bd9e4fc9a8cdfe74bb61799bed2e14fc6
   languageName: node
   linkType: hard
 
@@ -10559,10 +10796,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"signal-polyfill@npm:^0.2.2":
+  version: 0.2.2
+  resolution: "signal-polyfill@npm:0.2.2"
+  checksum: 10c0/485b0e66d93961454af32e7fbff88130138dffcbf7bce35e5c873d760ceb9ce33a125dd63cc59454c739c43246980515b1162cbe0ebc975a974ee036fb58d18a
+  languageName: node
+  linkType: hard
+
 "sisteransi@npm:^1.0.5":
   version: 1.0.5
   resolution: "sisteransi@npm:1.0.5"
   checksum: 10c0/230ac975cca485b7f6fe2b96a711aa62a6a26ead3e6fb8ba17c5a00d61b8bed0d7adc21f5626b70d7c33c62ff4e63933017a6462942c719d1980bb0b1207ad46
+  languageName: node
+  linkType: hard
+
+"slash@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "slash@npm:2.0.0"
+  checksum: 10c0/f83dbd3cb62c41bb8fcbbc6bf5473f3234b97fa1d008f571710a9d3757a28c7169e1811cad1554ccb1cc531460b3d221c9a7b37f549398d9a30707f0a5af9193
   languageName: node
   linkType: hard
 
@@ -11036,6 +11287,13 @@ __metadata:
     fdir: "npm:^6.5.0"
     picomatch: "npm:^4.0.4"
   checksum: 10c0/7f7bb0f197c88bc4b20c231e0deca4240ca3bf313a88f5a7fee93a872b84966a4d50220947c0455ad07a60b3b360961c5b7fd979222aeb716a9f99b412002e4c
+  languageName: node
+  linkType: hard
+
+"tmp@npm:^0.2.4":
+  version: 0.2.7
+  resolution: "tmp@npm:0.2.7"
+  checksum: 10c0/59eb55584f2f07210d3231b6a1f6b5c2b9794d8a7b509c8ee867ed2acad6d2245ee2448b7937b676ffbff3155a70077edde8a69f9d7cf0f90c86a62e8910c357
   languageName: node
   linkType: hard
 
@@ -11712,6 +11970,15 @@ __metadata:
   bin:
     yaml: bin.mjs
   checksum: 10c0/f340718df45e97a9551b9bf9dac61c80050bc464513b710debfb5067c380c8472e3b67809cffacb4ab5ffb5e66ef9310816c88b05f371cec60abfedd8c88e0a2
+  languageName: node
+  linkType: hard
+
+"yaml@npm:^2.2.2":
+  version: 2.9.1
+  resolution: "yaml@npm:2.9.1"
+  bin:
+    yaml: bin.mjs
+  checksum: 10c0/9d06676ef02b89559a8b10a71882bd2cdae81e8393dc8dbc871615c3259475d9609ad973d19cb3c9e71e72d6206e3d1e7aa241c7e55f3d16fd2e77db305827d6
   languageName: node
   linkType: hard
 

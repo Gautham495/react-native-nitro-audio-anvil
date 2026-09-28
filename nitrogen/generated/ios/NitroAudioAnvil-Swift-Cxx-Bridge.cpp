@@ -55,10 +55,10 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     };
   }
   
-  // pragma MARK: std::function<void(const std::vector<OrphanedRecording>& /* result */)>
-  Func_void_std__vector_OrphanedRecording_ create_Func_void_std__vector_OrphanedRecording_(void* NON_NULL swiftClosureWrapper) noexcept {
-    auto swiftClosure = NitroAudioAnvil::Func_void_std__vector_OrphanedRecording_::fromUnsafe(swiftClosureWrapper);
-    return [swiftClosure = std::move(swiftClosure)](const std::vector<OrphanedRecording>& result) mutable -> void {
+  // pragma MARK: std::function<void(const std::vector<RecoveredRecording>& /* result */)>
+  Func_void_std__vector_RecoveredRecording_ create_Func_void_std__vector_RecoveredRecording_(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = NitroAudioAnvil::Func_void_std__vector_RecoveredRecording_::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const std::vector<RecoveredRecording>& result) mutable -> void {
       swiftClosure.call(result);
     };
   }
@@ -68,6 +68,30 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     auto swiftClosure = NitroAudioAnvil::Func_void_RecordingSegment::fromUnsafe(swiftClosureWrapper);
     return [swiftClosure = std::move(swiftClosure)](const RecordingSegment& result) mutable -> void {
       swiftClosure.call(result);
+    };
+  }
+  
+  // pragma MARK: std::function<void(bool /* result */)>
+  Func_void_bool create_Func_void_bool(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = NitroAudioAnvil::Func_void_bool::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](bool result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
+  // pragma MARK: std::function<void(const std::vector<PendingUpload>& /* result */)>
+  Func_void_std__vector_PendingUpload_ create_Func_void_std__vector_PendingUpload_(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = NitroAudioAnvil::Func_void_std__vector_PendingUpload_::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const std::vector<PendingUpload>& result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
+  // pragma MARK: std::function<void()>
+  Func_void create_Func_void(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = NitroAudioAnvil::Func_void::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)]() mutable -> void {
+      swiftClosure.call();
     };
   }
   
@@ -87,26 +111,10 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     return swiftPart.toUnsafe();
   }
   
-  // pragma MARK: std::function<void()>
-  Func_void create_Func_void(void* NON_NULL swiftClosureWrapper) noexcept {
-    auto swiftClosure = NitroAudioAnvil::Func_void::fromUnsafe(swiftClosureWrapper);
-    return [swiftClosure = std::move(swiftClosure)]() mutable -> void {
-      swiftClosure.call();
-    };
-  }
-  
   // pragma MARK: std::function<void(const std::vector<RecordingSegment>& /* result */)>
   Func_void_std__vector_RecordingSegment_ create_Func_void_std__vector_RecordingSegment_(void* NON_NULL swiftClosureWrapper) noexcept {
     auto swiftClosure = NitroAudioAnvil::Func_void_std__vector_RecordingSegment_::fromUnsafe(swiftClosureWrapper);
     return [swiftClosure = std::move(swiftClosure)](const std::vector<RecordingSegment>& result) mutable -> void {
-      swiftClosure.call(result);
-    };
-  }
-  
-  // pragma MARK: std::function<void(const std::string& /* result */)>
-  Func_void_std__string create_Func_void_std__string(void* NON_NULL swiftClosureWrapper) noexcept {
-    auto swiftClosure = NitroAudioAnvil::Func_void_std__string::fromUnsafe(swiftClosureWrapper);
-    return [swiftClosure = std::move(swiftClosure)](const std::string& result) mutable -> void {
       swiftClosure.call(result);
     };
   }
@@ -148,6 +156,14 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     auto swiftClosure = NitroAudioAnvil::Func_void_StorageWarningEvent::fromUnsafe(swiftClosureWrapper);
     return [swiftClosure = std::move(swiftClosure)](const StorageWarningEvent& event) mutable -> void {
       swiftClosure.call(event);
+    };
+  }
+  
+  // pragma MARK: std::function<void(const std::string& /* manifestPath */)>
+  Func_void_std__string create_Func_void_std__string(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = NitroAudioAnvil::Func_void_std__string::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const std::string& manifestPath) mutable -> void {
+      swiftClosure.call(manifestPath);
     };
   }
   

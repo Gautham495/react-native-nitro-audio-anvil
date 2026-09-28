@@ -23,6 +23,12 @@ data class RecorderConfig(
   val outputDirectory: String,
   @DoNotStrip
   @Keep
+  val recordingId: String,
+  @DoNotStrip
+  @Keep
+  val resume: Boolean?,
+  @DoNotStrip
+  @Keep
   val segmentDurationMs: Double,
   @DoNotStrip
   @Keep
@@ -30,6 +36,9 @@ data class RecorderConfig(
   @DoNotStrip
   @Keep
   val sampleRate: Double,
+  @DoNotStrip
+  @Keep
+  val aacBitrate: Double,
   @DoNotStrip
   @Keep
   val streamChunkMs: Double,
@@ -58,9 +67,12 @@ data class RecorderConfig(
     if (this === other) return true
     if (other !is RecorderConfig) return false
     return Objects.deepEquals(this.outputDirectory, other.outputDirectory)
+      && Objects.deepEquals(this.recordingId, other.recordingId)
+      && Objects.deepEquals(this.resume, other.resume)
       && Objects.deepEquals(this.segmentDurationMs, other.segmentDurationMs)
       && Objects.deepEquals(this.fsyncIntervalMs, other.fsyncIntervalMs)
       && Objects.deepEquals(this.sampleRate, other.sampleRate)
+      && Objects.deepEquals(this.aacBitrate, other.aacBitrate)
       && Objects.deepEquals(this.streamChunkMs, other.streamChunkMs)
       && Objects.deepEquals(this.speakerWindowMs, other.speakerWindowMs)
       && Objects.deepEquals(this.speakerWindowHopMs, other.speakerWindowHopMs)
@@ -73,9 +85,12 @@ data class RecorderConfig(
   override fun hashCode(): Int {
     return arrayOf<Any?>(
       outputDirectory,
+      recordingId,
+      resume,
       segmentDurationMs,
       fsyncIntervalMs,
       sampleRate,
+      aacBitrate,
       streamChunkMs,
       speakerWindowMs,
       speakerWindowHopMs,
@@ -94,8 +109,8 @@ data class RecorderConfig(
     @Keep
     @Suppress("unused")
     @JvmStatic
-    private fun fromCpp(outputDirectory: String, segmentDurationMs: Double, fsyncIntervalMs: Double, sampleRate: Double, streamChunkMs: Double, speakerWindowMs: Double, speakerWindowHopMs: Double, onInterruption: InterruptionPolicy, keepAwakeInBackground: Boolean, storageWarningBytes: Double, notification: NotificationConfig?): RecorderConfig {
-      return RecorderConfig(outputDirectory, segmentDurationMs, fsyncIntervalMs, sampleRate, streamChunkMs, speakerWindowMs, speakerWindowHopMs, onInterruption, keepAwakeInBackground, storageWarningBytes, notification)
+    private fun fromCpp(outputDirectory: String, recordingId: String, resume: Boolean?, segmentDurationMs: Double, fsyncIntervalMs: Double, sampleRate: Double, aacBitrate: Double, streamChunkMs: Double, speakerWindowMs: Double, speakerWindowHopMs: Double, onInterruption: InterruptionPolicy, keepAwakeInBackground: Boolean, storageWarningBytes: Double, notification: NotificationConfig?): RecorderConfig {
+      return RecorderConfig(outputDirectory, recordingId, resume, segmentDurationMs, fsyncIntervalMs, sampleRate, aacBitrate, streamChunkMs, speakerWindowMs, speakerWindowHopMs, onInterruption, keepAwakeInBackground, storageWarningBytes, notification)
     }
   }
 }

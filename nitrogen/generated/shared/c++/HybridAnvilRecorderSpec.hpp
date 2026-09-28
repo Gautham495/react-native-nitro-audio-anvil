@@ -76,7 +76,9 @@ namespace margelo::nitro::audioanvil {
 
     public:
       // Properties
-      virtual std::string getSessionId() = 0;
+      virtual std::string getRecordingId() = 0;
+      virtual std::string getFolderPath() = 0;
+      virtual std::string getManifestPath() = 0;
       virtual RecorderState getState() = 0;
       virtual double getTotalDurationMs() = 0;
       virtual std::string getCurrentSegmentPath() = 0;
@@ -88,7 +90,7 @@ namespace margelo::nitro::audioanvil {
       virtual std::shared_ptr<Promise<void>> resume() = 0;
       virtual std::shared_ptr<Promise<std::vector<RecordingSegment>>> stop() = 0;
       virtual std::shared_ptr<Promise<RecordingSegment>> rotateSegment() = 0;
-      virtual std::shared_ptr<Promise<std::string>> extractRange(double startMs, double endMs) = 0;
+      virtual std::shared_ptr<Promise<void>> markSegmentUploaded(const std::string& filename) = 0;
       virtual AnvilListenerSubscription addPCMListener(const std::function<void(const PCMChunk& /* chunk */)>& listener) = 0;
       virtual AnvilListenerSubscription addSpeakerWindowListener(const std::function<void(const SpeakerWindow& /* window */)>& listener) = 0;
       virtual AnvilListenerSubscription addInterruptionListener(const std::function<void(const AnvilInterruptionEvent& /* event */)>& listener) = 0;
@@ -96,6 +98,7 @@ namespace margelo::nitro::audioanvil {
       virtual AnvilListenerSubscription addPermissionChangeListener(const std::function<void(AnvilPermissionStatus /* status */)>& listener) = 0;
       virtual AnvilListenerSubscription addStorageWarningListener(const std::function<void(const StorageWarningEvent& /* event */)>& listener) = 0;
       virtual AnvilListenerSubscription addSegmentCompletedListener(const std::function<void(const RecordingSegment& /* segment */)>& listener) = 0;
+      virtual AnvilListenerSubscription addManifestUpdatedListener(const std::function<void(const std::string& /* manifestPath */)>& listener) = 0;
       virtual AnvilListenerSubscription addErrorListener(const std::function<void(const RecorderError& /* error */)>& listener) = 0;
 
     protected:

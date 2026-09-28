@@ -19,6 +19,9 @@ namespace margelo::nitro::audioanvil {
       prototype.registerHybridMethod("requestPermission", &HybridAnvilFactorySpec::requestPermission);
       prototype.registerHybridMethod("discoverOrphanedRecordings", &HybridAnvilFactorySpec::discoverOrphanedRecordings);
       prototype.registerHybridMethod("concatenate", &HybridAnvilFactorySpec::concatenate);
+      prototype.registerHybridMethod("deleteRecording", &HybridAnvilFactorySpec::deleteRecording);
+      prototype.registerHybridMethod("retryPendingUploads", &HybridAnvilFactorySpec::retryPendingUploads);
+      prototype.registerHybridMethod("markSegmentUploaded", &HybridAnvilFactorySpec::markSegmentUploaded);
     });
   }
 

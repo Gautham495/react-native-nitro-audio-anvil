@@ -43,6 +43,7 @@ namespace margelo::nitro::audioanvil {
   struct RecordingSegment final {
   public:
     double index     SWIFT_PRIVATE;
+    std::string filename     SWIFT_PRIVATE;
     std::string filePath     SWIFT_PRIVATE;
     double sampleRate     SWIFT_PRIVATE;
     double durationMs     SWIFT_PRIVATE;
@@ -57,7 +58,7 @@ namespace margelo::nitro::audioanvil {
 
   public:
     RecordingSegment() = default;
-    explicit RecordingSegment(double index, std::string filePath, double sampleRate, double durationMs, double fileSize, double mediaStartMs, double startedAt, double endedAt, bool wasInterrupted, std::optional<AnvilInterruptionReason> interruptionReason, bool routeChanged, std::string sha256): index(index), filePath(filePath), sampleRate(sampleRate), durationMs(durationMs), fileSize(fileSize), mediaStartMs(mediaStartMs), startedAt(startedAt), endedAt(endedAt), wasInterrupted(wasInterrupted), interruptionReason(interruptionReason), routeChanged(routeChanged), sha256(sha256) {}
+    explicit RecordingSegment(double index, std::string filename, std::string filePath, double sampleRate, double durationMs, double fileSize, double mediaStartMs, double startedAt, double endedAt, bool wasInterrupted, std::optional<AnvilInterruptionReason> interruptionReason, bool routeChanged, std::string sha256): index(index), filename(filename), filePath(filePath), sampleRate(sampleRate), durationMs(durationMs), fileSize(fileSize), mediaStartMs(mediaStartMs), startedAt(startedAt), endedAt(endedAt), wasInterrupted(wasInterrupted), interruptionReason(interruptionReason), routeChanged(routeChanged), sha256(sha256) {}
 
   public:
     friend bool operator==(const RecordingSegment& lhs, const RecordingSegment& rhs) = default;
@@ -74,6 +75,7 @@ namespace margelo::nitro {
       jsi::Object obj = arg.asObject(runtime);
       return margelo::nitro::audioanvil::RecordingSegment(
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "index"))),
+        JSIConverter<std::string>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "filename"))),
         JSIConverter<std::string>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "filePath"))),
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "sampleRate"))),
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "durationMs"))),
@@ -90,6 +92,7 @@ namespace margelo::nitro {
     static inline jsi::Value toJSI(jsi::Runtime& runtime, const margelo::nitro::audioanvil::RecordingSegment& arg) {
       jsi::Object obj(runtime);
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "index"), JSIConverter<double>::toJSI(runtime, arg.index));
+      obj.setProperty(runtime, PropNameIDCache::get(runtime, "filename"), JSIConverter<std::string>::toJSI(runtime, arg.filename));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "filePath"), JSIConverter<std::string>::toJSI(runtime, arg.filePath));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "sampleRate"), JSIConverter<double>::toJSI(runtime, arg.sampleRate));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "durationMs"), JSIConverter<double>::toJSI(runtime, arg.durationMs));
@@ -112,6 +115,7 @@ namespace margelo::nitro {
         return false;
       }
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "index")))) return false;
+      if (!JSIConverter<std::string>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "filename")))) return false;
       if (!JSIConverter<std::string>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "filePath")))) return false;
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "sampleRate")))) return false;
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "durationMs")))) return false;

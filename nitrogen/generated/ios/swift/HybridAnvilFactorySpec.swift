@@ -16,8 +16,11 @@ public protocol HybridAnvilFactorySpec_protocol: HybridObject {
   func createRecorder(config: RecorderConfig) throws -> Promise<(any HybridAnvilRecorderSpec)>
   func getPermissionStatus() throws -> AnvilPermissionStatus
   func requestPermission() throws -> Promise<AnvilPermissionStatus>
-  func discoverOrphanedRecordings(directory: String) throws -> Promise<[OrphanedRecording]>
-  func concatenate(segmentPaths: [String], outputPath: String) throws -> Promise<RecordingSegment>
+  func discoverOrphanedRecordings(outputDirectory: String) throws -> Promise<[RecoveredRecording]>
+  func concatenate(outputDirectory: String, recordingId: String, outputPath: String) throws -> Promise<RecordingSegment>
+  func deleteRecording(outputDirectory: String, recordingId: String) throws -> Promise<Bool>
+  func retryPendingUploads(outputDirectory: String) throws -> Promise<[PendingUpload]>
+  func markSegmentUploaded(outputDirectory: String, recordingId: String, filename: String) throws -> Promise<Void>
 }
 
 public extension HybridAnvilFactorySpec_protocol {

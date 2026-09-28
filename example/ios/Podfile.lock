@@ -1,16 +1,9 @@
 PODS:
   - FBLazyVector (0.85.3)
-  - google-cast-sdk (4.8.6):
-    - GTMSessionFetcher
-  - GTMSessionFetcher (5.3.1):
-    - GTMSessionFetcher/Full (= 5.3.1)
-  - GTMSessionFetcher/Core (5.3.1)
-  - GTMSessionFetcher/Full (5.3.1):
-    - GTMSessionFetcher/Core
   - hermes-engine (250829098.0.10):
     - hermes-engine/Pre-built (= 250829098.0.10)
   - hermes-engine/Pre-built (250829098.0.10)
-  - NitroAudioAnvil (2.0.0):
+  - NitroAudioAnvil (2.0.1):
     - hermes-engine
     - NitroModules
     - RCTRequired
@@ -81,31 +74,6 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - NitroPlayer (1.6.1):
-    - google-cast-sdk (~> 4.8)
-    - hermes-engine
-    - NitroModules
-    - RCTRequired
-    - RCTTypeSafety
-    - React-callinvoker
-    - React-Core
-    - React-Core-prebuilt
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-ImageManager
-    - React-jsi
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-renderercss
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/bridging
-    - ReactCommon/turbomodule/core
-    - ReactNativeDependencies
-    - Yoga
   - RCTDeprecation (0.85.3)
   - RCTRequired (0.85.3)
   - RCTSwiftUI (0.85.3)
@@ -148,7 +116,7 @@ PODS:
     - React-utils
     - ReactNativeDependencies
     - Yoga
-  - React-Core-prebuilt (0.85.0):
+  - React-Core-prebuilt (0.85.3):
     - ReactNativeDependencies
   - React-Core/CoreModulesHeaders (0.85.3):
     - hermes-engine
@@ -1912,6 +1880,51 @@ PODS:
     - React-utils (= 0.85.3)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.85.3)
+  - ReactNativeVideo (7.0.0-beta.11):
+    - hermes-engine
+    - NitroModules
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - RNCClipboard (1.16.3):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - RNShare (12.0.11):
     - hermes-engine
     - RCTRequired
@@ -1942,7 +1955,6 @@ DEPENDENCIES:
   - NitroAudioAnvil (from `../..`)
   - NitroCloudUploader (from `../node_modules/react-native-nitro-cloud-uploader`)
   - NitroModules (from `../node_modules/react-native-nitro-modules`)
-  - NitroPlayer (from `../node_modules/react-native-nitro-player`)
   - RCTDeprecation (from `../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)
   - RCTRequired (from `../node_modules/react-native/Libraries/Required`)
   - RCTSwiftUI (from `../node_modules/react-native/ReactApple/RCTSwiftUI`)
@@ -2016,13 +2028,10 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
+  - ReactNativeVideo (from `../node_modules/react-native-video`)
+  - "RNCClipboard (from `../node_modules/@react-native-clipboard/clipboard`)"
   - RNShare (from `../node_modules/react-native-share`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
-
-SPEC REPOS:
-  trunk:
-    - google-cast-sdk
-    - GTMSessionFetcher
 
 EXTERNAL SOURCES:
   FBLazyVector:
@@ -2036,8 +2045,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-nitro-cloud-uploader"
   NitroModules:
     :path: "../node_modules/react-native-nitro-modules"
-  NitroPlayer:
-    :path: "../node_modules/react-native-nitro-player"
   RCTDeprecation:
     :path: "../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation"
   RCTRequired:
@@ -2182,6 +2189,10 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   ReactNativeDependencies:
     :podspec: "../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
+  ReactNativeVideo:
+    :path: "../node_modules/react-native-video"
+  RNCClipboard:
+    :path: "../node_modules/@react-native-clipboard/clipboard"
   RNShare:
     :path: "../node_modules/react-native-share"
   Yoga:
@@ -2189,13 +2200,10 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   FBLazyVector: 24e62c765683b8d89006a88a2c8f5cf019f0074d
-  google-cast-sdk: e90a401e59b477644157fa782359b31b24448c9f
-  GTMSessionFetcher: a6d2b2aa203485893d4511ff64642dc811f7c09f
   hermes-engine: de7959ed4d16755a73bf878e479a434a352c447c
-  NitroAudioAnvil: db272bdc4855d21f289827358d7fa3dcb892df2a
+  NitroAudioAnvil: d74628a06c9cea8c2e735a0ae8c90278beac41bb
   NitroCloudUploader: 80ce1f09e09971ea524b09ec2079be0a629424b1
   NitroModules: 38f8754287858ff1294e43fd43f614a664e54050
-  NitroPlayer: 47f433a26c21d3c05cd5094d7c1227c52ffe00b9
   RCTDeprecation: a4c521821fab57cbb125b36effe84d897d0dfa12
   RCTRequired: 9f3a7e5645d4bc3f551593de7550bb66ab6e42bc
   RCTSwiftUI: 239ed2eb9e73de5a6f518810630f0c95e01c8702
@@ -2204,7 +2212,7 @@ SPEC CHECKSUMS:
   React: e2dc35338068bbd299c66f043ae0d7f25de8499e
   React-callinvoker: 28b25d21b124c26cebaea713ba7d801b9351dc48
   React-Core: 02ed7d2ffb70437bdf2aba074a13078a7b0b9ff0
-  React-Core-prebuilt: a1079ccb00604f208b89edbd84ae323e9e0b61b5
+  React-Core-prebuilt: 377a762e46f03e465fa588a3c1f9794ae448be14
   React-CoreModules: b3a5a42dadcde3b5d47b325bd912eb2ced89e146
   React-cxxreact: fe8f88dda044e5905e99a00f41b7a874c3908716
   React-debug: 92944dc4d89f56d640e75498266cbde557a48189
@@ -2268,6 +2276,8 @@ SPEC CHECKSUMS:
   ReactCodegen: c8f81e6c6f762dcf442a6203a1fb58f7dafc8014
   ReactCommon: 7dfc3250793bf36cf221096ff59e1179e13eef7f
   ReactNativeDependencies: af329c74f5514886ed06467cdc0267e2e8698971
+  ReactNativeVideo: 2f2ef2af51dce189f41d2e49e0dc8ce48d7ed081
+  RNCClipboard: 715fa7c6c8366f17d00f05a439ee7488f390fa5f
   RNShare: 23229f92f5882447326204e9ef3762fb2ffe9989
   Yoga: 77dfa8673de2874e1855002ae59c68b8be9b007b
 

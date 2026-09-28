@@ -34,9 +34,9 @@ namespace margelo::nitro::audioanvil { enum class InterruptionPolicy; }
 namespace margelo::nitro::audioanvil { struct NotificationConfig; }
 
 #include <string>
+#include <optional>
 #include "InterruptionPolicy.hpp"
 #include "NotificationConfig.hpp"
-#include <optional>
 
 namespace margelo::nitro::audioanvil {
 
@@ -46,9 +46,12 @@ namespace margelo::nitro::audioanvil {
   struct RecorderConfig final {
   public:
     std::string outputDirectory     SWIFT_PRIVATE;
+    std::string recordingId     SWIFT_PRIVATE;
+    std::optional<bool> resume     SWIFT_PRIVATE;
     double segmentDurationMs     SWIFT_PRIVATE;
     double fsyncIntervalMs     SWIFT_PRIVATE;
     double sampleRate     SWIFT_PRIVATE;
+    double aacBitrate     SWIFT_PRIVATE;
     double streamChunkMs     SWIFT_PRIVATE;
     double speakerWindowMs     SWIFT_PRIVATE;
     double speakerWindowHopMs     SWIFT_PRIVATE;
@@ -59,7 +62,7 @@ namespace margelo::nitro::audioanvil {
 
   public:
     RecorderConfig() = default;
-    explicit RecorderConfig(std::string outputDirectory, double segmentDurationMs, double fsyncIntervalMs, double sampleRate, double streamChunkMs, double speakerWindowMs, double speakerWindowHopMs, InterruptionPolicy onInterruption, bool keepAwakeInBackground, double storageWarningBytes, std::optional<NotificationConfig> notification): outputDirectory(outputDirectory), segmentDurationMs(segmentDurationMs), fsyncIntervalMs(fsyncIntervalMs), sampleRate(sampleRate), streamChunkMs(streamChunkMs), speakerWindowMs(speakerWindowMs), speakerWindowHopMs(speakerWindowHopMs), onInterruption(onInterruption), keepAwakeInBackground(keepAwakeInBackground), storageWarningBytes(storageWarningBytes), notification(notification) {}
+    explicit RecorderConfig(std::string outputDirectory, std::string recordingId, std::optional<bool> resume, double segmentDurationMs, double fsyncIntervalMs, double sampleRate, double aacBitrate, double streamChunkMs, double speakerWindowMs, double speakerWindowHopMs, InterruptionPolicy onInterruption, bool keepAwakeInBackground, double storageWarningBytes, std::optional<NotificationConfig> notification): outputDirectory(outputDirectory), recordingId(recordingId), resume(resume), segmentDurationMs(segmentDurationMs), fsyncIntervalMs(fsyncIntervalMs), sampleRate(sampleRate), aacBitrate(aacBitrate), streamChunkMs(streamChunkMs), speakerWindowMs(speakerWindowMs), speakerWindowHopMs(speakerWindowHopMs), onInterruption(onInterruption), keepAwakeInBackground(keepAwakeInBackground), storageWarningBytes(storageWarningBytes), notification(notification) {}
 
   public:
     friend bool operator==(const RecorderConfig& lhs, const RecorderConfig& rhs) = default;
@@ -76,9 +79,12 @@ namespace margelo::nitro {
       jsi::Object obj = arg.asObject(runtime);
       return margelo::nitro::audioanvil::RecorderConfig(
         JSIConverter<std::string>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "outputDirectory"))),
+        JSIConverter<std::string>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "recordingId"))),
+        JSIConverter<std::optional<bool>>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "resume"))),
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "segmentDurationMs"))),
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "fsyncIntervalMs"))),
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "sampleRate"))),
+        JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "aacBitrate"))),
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "streamChunkMs"))),
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "speakerWindowMs"))),
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "speakerWindowHopMs"))),
@@ -91,9 +97,12 @@ namespace margelo::nitro {
     static inline jsi::Value toJSI(jsi::Runtime& runtime, const margelo::nitro::audioanvil::RecorderConfig& arg) {
       jsi::Object obj(runtime);
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "outputDirectory"), JSIConverter<std::string>::toJSI(runtime, arg.outputDirectory));
+      obj.setProperty(runtime, PropNameIDCache::get(runtime, "recordingId"), JSIConverter<std::string>::toJSI(runtime, arg.recordingId));
+      obj.setProperty(runtime, PropNameIDCache::get(runtime, "resume"), JSIConverter<std::optional<bool>>::toJSI(runtime, arg.resume));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "segmentDurationMs"), JSIConverter<double>::toJSI(runtime, arg.segmentDurationMs));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "fsyncIntervalMs"), JSIConverter<double>::toJSI(runtime, arg.fsyncIntervalMs));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "sampleRate"), JSIConverter<double>::toJSI(runtime, arg.sampleRate));
+      obj.setProperty(runtime, PropNameIDCache::get(runtime, "aacBitrate"), JSIConverter<double>::toJSI(runtime, arg.aacBitrate));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "streamChunkMs"), JSIConverter<double>::toJSI(runtime, arg.streamChunkMs));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "speakerWindowMs"), JSIConverter<double>::toJSI(runtime, arg.speakerWindowMs));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "speakerWindowHopMs"), JSIConverter<double>::toJSI(runtime, arg.speakerWindowHopMs));
@@ -112,9 +121,12 @@ namespace margelo::nitro {
         return false;
       }
       if (!JSIConverter<std::string>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "outputDirectory")))) return false;
+      if (!JSIConverter<std::string>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "recordingId")))) return false;
+      if (!JSIConverter<std::optional<bool>>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "resume")))) return false;
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "segmentDurationMs")))) return false;
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "fsyncIntervalMs")))) return false;
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "sampleRate")))) return false;
+      if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "aacBitrate")))) return false;
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "streamChunkMs")))) return false;
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "speakerWindowMs")))) return false;
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "speakerWindowHopMs")))) return false;

@@ -11,12 +11,16 @@
 namespace margelo::nitro::audioanvil { class HybridAnvilRecorderSpec; }
 // Forward declaration of `AnvilPermissionStatus` to properly resolve imports.
 namespace margelo::nitro::audioanvil { enum class AnvilPermissionStatus; }
-// Forward declaration of `OrphanedRecording` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct OrphanedRecording; }
+// Forward declaration of `RecoveredRecording` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct RecoveredRecording; }
 // Forward declaration of `RecordingSegment` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecordingSegment; }
 // Forward declaration of `AnvilInterruptionReason` to properly resolve imports.
 namespace margelo::nitro::audioanvil { enum class AnvilInterruptionReason; }
+// Forward declaration of `PendingUpload` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct PendingUpload; }
+// Forward declaration of `PendingUploadKind` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class PendingUploadKind; }
 // Forward declaration of `RecorderConfig` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecorderConfig; }
 // Forward declaration of `InterruptionPolicy` to properly resolve imports.
@@ -31,15 +35,20 @@ namespace margelo::nitro::audioanvil { struct NotificationConfig; }
 #include "JHybridAnvilRecorderSpec.hpp"
 #include "AnvilPermissionStatus.hpp"
 #include "JAnvilPermissionStatus.hpp"
-#include "OrphanedRecording.hpp"
+#include "RecoveredRecording.hpp"
 #include <vector>
-#include "JOrphanedRecording.hpp"
+#include "JRecoveredRecording.hpp"
 #include <string>
 #include "RecordingSegment.hpp"
 #include "JRecordingSegment.hpp"
 #include "AnvilInterruptionReason.hpp"
 #include <optional>
 #include "JAnvilInterruptionReason.hpp"
+#include "PendingUpload.hpp"
+#include "JPendingUpload.hpp"
+#include "PendingUploadKind.hpp"
+#include "JPendingUploadKind.hpp"
+#include <NitroModules/JUnit.hpp>
 #include "RecorderConfig.hpp"
 #include "JRecorderConfig.hpp"
 #include "InterruptionPolicy.hpp"
@@ -117,16 +126,16 @@ namespace margelo::nitro::audioanvil {
       return __promise;
     }();
   }
-  std::shared_ptr<Promise<std::vector<OrphanedRecording>>> JHybridAnvilFactorySpec::discoverOrphanedRecordings(const std::string& directory) {
-    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<jni::JString> /* directory */)>("discoverOrphanedRecordings");
-    auto __result = method(_javaPart, jni::make_jstring(directory));
+  std::shared_ptr<Promise<std::vector<RecoveredRecording>>> JHybridAnvilFactorySpec::discoverOrphanedRecordings(const std::string& outputDirectory) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<jni::JString> /* outputDirectory */)>("discoverOrphanedRecordings");
+    auto __result = method(_javaPart, jni::make_jstring(outputDirectory));
     return [&]() {
-      auto __promise = Promise<std::vector<OrphanedRecording>>::create();
+      auto __promise = Promise<std::vector<RecoveredRecording>>::create();
       __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
-        auto __result = jni::static_ref_cast<jni::JArrayClass<JOrphanedRecording>>(__boxedResult);
+        auto __result = jni::static_ref_cast<jni::JArrayClass<JRecoveredRecording>>(__boxedResult);
         __promise->resolve([&](auto&& __input) {
           size_t __size = __input->size();
-          std::vector<OrphanedRecording> __vector;
+          std::vector<RecoveredRecording> __vector;
           __vector.reserve(__size);
           for (size_t __i = 0; __i < __size; __i++) {
             auto __element = __input->getElement(__i);
@@ -142,23 +151,70 @@ namespace margelo::nitro::audioanvil {
       return __promise;
     }();
   }
-  std::shared_ptr<Promise<RecordingSegment>> JHybridAnvilFactorySpec::concatenate(const std::vector<std::string>& segmentPaths, const std::string& outputPath) {
-    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<jni::JArrayClass<jni::JString>> /* segmentPaths */, jni::alias_ref<jni::JString> /* outputPath */)>("concatenate");
-    auto __result = method(_javaPart, [&](auto&& __input) {
-      size_t __size = __input.size();
-      jni::local_ref<jni::JArrayClass<jni::JString>> __array = jni::JArrayClass<jni::JString>::newArray(__size);
-      for (size_t __i = 0; __i < __size; __i++) {
-        const auto& __element = __input[__i];
-        auto __elementJni = jni::make_jstring(__element);
-        __array->setElement(__i, *__elementJni);
-      }
-      return __array;
-    }(segmentPaths), jni::make_jstring(outputPath));
+  std::shared_ptr<Promise<RecordingSegment>> JHybridAnvilFactorySpec::concatenate(const std::string& outputDirectory, const std::string& recordingId, const std::string& outputPath) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<jni::JString> /* outputDirectory */, jni::alias_ref<jni::JString> /* recordingId */, jni::alias_ref<jni::JString> /* outputPath */)>("concatenate");
+    auto __result = method(_javaPart, jni::make_jstring(outputDirectory), jni::make_jstring(recordingId), jni::make_jstring(outputPath));
     return [&]() {
       auto __promise = Promise<RecordingSegment>::create();
       __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
         auto __result = jni::static_ref_cast<JRecordingSegment>(__boxedResult);
         __promise->resolve(__result->toCpp());
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<bool>> JHybridAnvilFactorySpec::deleteRecording(const std::string& outputDirectory, const std::string& recordingId) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<jni::JString> /* outputDirectory */, jni::alias_ref<jni::JString> /* recordingId */)>("deleteRecording");
+    auto __result = method(_javaPart, jni::make_jstring(outputDirectory), jni::make_jstring(recordingId));
+    return [&]() {
+      auto __promise = Promise<bool>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
+        auto __result = jni::static_ref_cast<jni::JBoolean>(__boxedResult);
+        __promise->resolve(static_cast<bool>(__result->value()));
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<std::vector<PendingUpload>>> JHybridAnvilFactorySpec::retryPendingUploads(const std::string& outputDirectory) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<jni::JString> /* outputDirectory */)>("retryPendingUploads");
+    auto __result = method(_javaPart, jni::make_jstring(outputDirectory));
+    return [&]() {
+      auto __promise = Promise<std::vector<PendingUpload>>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
+        auto __result = jni::static_ref_cast<jni::JArrayClass<JPendingUpload>>(__boxedResult);
+        __promise->resolve([&](auto&& __input) {
+          size_t __size = __input->size();
+          std::vector<PendingUpload> __vector;
+          __vector.reserve(__size);
+          for (size_t __i = 0; __i < __size; __i++) {
+            auto __element = __input->getElement(__i);
+            __vector.push_back(__element->toCpp());
+          }
+          return __vector;
+        }(__result));
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<void>> JHybridAnvilFactorySpec::markSegmentUploaded(const std::string& outputDirectory, const std::string& recordingId, const std::string& filename) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<jni::JString> /* outputDirectory */, jni::alias_ref<jni::JString> /* recordingId */, jni::alias_ref<jni::JString> /* filename */)>("markSegmentUploaded");
+    auto __result = method(_javaPart, jni::make_jstring(outputDirectory), jni::make_jstring(recordingId), jni::make_jstring(filename));
+    return [&]() {
+      auto __promise = Promise<void>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& /* unit */) {
+        __promise->resolve();
       });
       __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
         jni::JniException __jniError(__throwable);

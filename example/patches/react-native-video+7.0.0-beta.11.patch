@@ -1,0 +1,157 @@
+diff --git a/node_modules/react-native-video/nitrogen/generated/android/c++/JHybridVideoPlayerEventEmitterSpec.cpp b/node_modules/react-native-video/nitrogen/generated/android/c++/JHybridVideoPlayerEventEmitterSpec.cpp
+index 07734f8..3675680 100644
+--- a/node_modules/react-native-video/nitrogen/generated/android/c++/JHybridVideoPlayerEventEmitterSpec.cpp
++++ b/node_modules/react-native-video/nitrogen/generated/android/c++/JHybridVideoPlayerEventEmitterSpec.cpp
+@@ -36,7 +36,7 @@ namespace margelo::nitro::video { struct TextTrack; }
+ // Forward declaration of `onVolumeChangeData` to properly resolve imports.
+ namespace margelo::nitro::video { struct onVolumeChangeData; }
+ 
+-#include "ListenerSubscription.hpp"
++#include "VideoListenerSubscription.hpp"
+ #include "JListenerSubscription.hpp"
+ #include <functional>
+ #include "JFunc_void.hpp"
+diff --git a/node_modules/react-native-video/nitrogen/generated/android/c++/JHybridVideoViewViewManagerSpec.cpp b/node_modules/react-native-video/nitrogen/generated/android/c++/JHybridVideoViewViewManagerSpec.cpp
+index de5f74e..70eec24 100644
+--- a/node_modules/react-native-video/nitrogen/generated/android/c++/JHybridVideoViewViewManagerSpec.cpp
++++ b/node_modules/react-native-video/nitrogen/generated/android/c++/JHybridVideoViewViewManagerSpec.cpp
+@@ -20,11 +20,11 @@ namespace margelo::nitro::video { struct ListenerSubscription; }
+ #include "HybridVideoPlayerSpec.hpp"
+ #include <optional>
+ #include "JHybridVideoPlayerSpec.hpp"
+-#include "ResizeMode.hpp"
++#include "VideoResizeMode.hpp"
+ #include "JResizeMode.hpp"
+ #include "SurfaceType.hpp"
+ #include "JSurfaceType.hpp"
+-#include "ListenerSubscription.hpp"
++#include "VideoListenerSubscription.hpp"
+ #include "JListenerSubscription.hpp"
+ #include <functional>
+ #include "JFunc_void.hpp"
+diff --git a/node_modules/react-native-video/nitrogen/generated/android/c++/JListenerSubscription.hpp b/node_modules/react-native-video/nitrogen/generated/android/c++/JListenerSubscription.hpp
+index 37f320c..6e2af33 100644
+--- a/node_modules/react-native-video/nitrogen/generated/android/c++/JListenerSubscription.hpp
++++ b/node_modules/react-native-video/nitrogen/generated/android/c++/JListenerSubscription.hpp
+@@ -8,7 +8,7 @@
+ #pragma once
+ 
+ #include <fbjni/fbjni.h>
+-#include "ListenerSubscription.hpp"
++#include "VideoListenerSubscription.hpp"
+ 
+ #include "JFunc_void.hpp"
+ #include <NitroModules/JNICallable.hpp>
+diff --git a/node_modules/react-native-video/nitrogen/generated/android/c++/JResizeMode.hpp b/node_modules/react-native-video/nitrogen/generated/android/c++/JResizeMode.hpp
+index 88e3a89..648231f 100644
+--- a/node_modules/react-native-video/nitrogen/generated/android/c++/JResizeMode.hpp
++++ b/node_modules/react-native-video/nitrogen/generated/android/c++/JResizeMode.hpp
+@@ -8,7 +8,7 @@
+ #pragma once
+ 
+ #include <fbjni/fbjni.h>
+-#include "ResizeMode.hpp"
++#include "VideoResizeMode.hpp"
+ 
+ namespace margelo::nitro::video {
+ 
+diff --git a/node_modules/react-native-video/nitrogen/generated/ios/ReactNativeVideo-Swift-Cxx-Bridge.hpp b/node_modules/react-native-video/nitrogen/generated/ios/ReactNativeVideo-Swift-Cxx-Bridge.hpp
+index cc75032..2f803ef 100644
+--- a/node_modules/react-native-video/nitrogen/generated/ios/ReactNativeVideo-Swift-Cxx-Bridge.hpp
++++ b/node_modules/react-native-video/nitrogen/generated/ios/ReactNativeVideo-Swift-Cxx-Bridge.hpp
+@@ -94,7 +94,7 @@ namespace ReactNativeVideo { class HybridVideoViewViewManagerSpec_cxx; }
+ #include "HybridVideoPlayerSpec.hpp"
+ #include "HybridVideoViewViewManagerFactorySpec.hpp"
+ #include "HybridVideoViewViewManagerSpec.hpp"
+-#include "ListenerSubscription.hpp"
++#include "VideoListenerSubscription.hpp"
+ #include "LivePlaybackParams.hpp"
+ #include "NativeDrmParams.hpp"
+ #include "NativeExternalSubtitle.hpp"
+diff --git a/node_modules/react-native-video/nitrogen/generated/ios/ReactNativeVideo-Swift-Cxx-Umbrella.hpp b/node_modules/react-native-video/nitrogen/generated/ios/ReactNativeVideo-Swift-Cxx-Umbrella.hpp
+index 35fce7e..205348d 100644
+--- a/node_modules/react-native-video/nitrogen/generated/ios/ReactNativeVideo-Swift-Cxx-Umbrella.hpp
++++ b/node_modules/react-native-video/nitrogen/generated/ios/ReactNativeVideo-Swift-Cxx-Umbrella.hpp
+@@ -89,14 +89,14 @@ namespace margelo::nitro::video { struct onVolumeChangeData; }
+ #include "HybridVideoViewViewManagerFactorySpec.hpp"
+ #include "HybridVideoViewViewManagerSpec.hpp"
+ #include "IgnoreSilentSwitchMode.hpp"
+-#include "ListenerSubscription.hpp"
++#include "VideoListenerSubscription.hpp"
+ #include "LivePlaybackParams.hpp"
+ #include "MixAudioMode.hpp"
+ #include "NativeDrmParams.hpp"
+ #include "NativeExternalSubtitle.hpp"
+ #include "NativeVideoConfig.hpp"
+ #include "OnGetLicensePayload.hpp"
+-#include "ResizeMode.hpp"
++#include "VideoResizeMode.hpp"
+ #include "Resolution.hpp"
+ #include "SourceType.hpp"
+ #include "SubtitleType.hpp"
+diff --git a/node_modules/react-native-video/nitrogen/generated/ios/c++/HybridVideoPlayerEventEmitterSpecSwift.hpp b/node_modules/react-native-video/nitrogen/generated/ios/c++/HybridVideoPlayerEventEmitterSpecSwift.hpp
+index 7571e7d..8e0e93e 100644
+--- a/node_modules/react-native-video/nitrogen/generated/ios/c++/HybridVideoPlayerEventEmitterSpecSwift.hpp
++++ b/node_modules/react-native-video/nitrogen/generated/ios/c++/HybridVideoPlayerEventEmitterSpecSwift.hpp
+@@ -41,7 +41,7 @@ namespace margelo::nitro::video { struct TextTrack; }
+ // Forward declaration of `onVolumeChangeData` to properly resolve imports.
+ namespace margelo::nitro::video { struct onVolumeChangeData; }
+ 
+-#include "ListenerSubscription.hpp"
++#include "VideoListenerSubscription.hpp"
+ #include <functional>
+ #include "BandwidthData.hpp"
+ #include <optional>
+diff --git a/node_modules/react-native-video/nitrogen/generated/ios/c++/HybridVideoViewViewManagerSpecSwift.hpp b/node_modules/react-native-video/nitrogen/generated/ios/c++/HybridVideoViewViewManagerSpecSwift.hpp
+index dd0e0a7..264501a 100644
+--- a/node_modules/react-native-video/nitrogen/generated/ios/c++/HybridVideoViewViewManagerSpecSwift.hpp
++++ b/node_modules/react-native-video/nitrogen/generated/ios/c++/HybridVideoViewViewManagerSpecSwift.hpp
+@@ -24,9 +24,9 @@ namespace margelo::nitro::video { struct ListenerSubscription; }
+ #include <memory>
+ #include "HybridVideoPlayerSpec.hpp"
+ #include <optional>
+-#include "ResizeMode.hpp"
++#include "VideoResizeMode.hpp"
+ #include "SurfaceType.hpp"
+-#include "ListenerSubscription.hpp"
++#include "VideoListenerSubscription.hpp"
+ #include <functional>
+ 
+ #include "ReactNativeVideo-Swift-Cxx-Umbrella.hpp"
+diff --git a/node_modules/react-native-video/nitrogen/generated/shared/c++/HybridVideoPlayerEventEmitterSpec.hpp b/node_modules/react-native-video/nitrogen/generated/shared/c++/HybridVideoPlayerEventEmitterSpec.hpp
+index 69dc0be..787647b 100644
+--- a/node_modules/react-native-video/nitrogen/generated/shared/c++/HybridVideoPlayerEventEmitterSpec.hpp
++++ b/node_modules/react-native-video/nitrogen/generated/shared/c++/HybridVideoPlayerEventEmitterSpec.hpp
+@@ -34,7 +34,7 @@ namespace margelo::nitro::video { struct TextTrack; }
+ // Forward declaration of `onVolumeChangeData` to properly resolve imports.
+ namespace margelo::nitro::video { struct onVolumeChangeData; }
+ 
+-#include "ListenerSubscription.hpp"
++#include "VideoListenerSubscription.hpp"
+ #include <functional>
+ #include "BandwidthData.hpp"
+ #include "onLoadData.hpp"
+diff --git a/node_modules/react-native-video/nitrogen/generated/shared/c++/HybridVideoViewViewManagerSpec.hpp b/node_modules/react-native-video/nitrogen/generated/shared/c++/HybridVideoViewViewManagerSpec.hpp
+index 163bb9a..2d6d96d 100644
+--- a/node_modules/react-native-video/nitrogen/generated/shared/c++/HybridVideoViewViewManagerSpec.hpp
++++ b/node_modules/react-native-video/nitrogen/generated/shared/c++/HybridVideoViewViewManagerSpec.hpp
+@@ -25,9 +25,9 @@ namespace margelo::nitro::video { struct ListenerSubscription; }
+ #include <memory>
+ #include "HybridVideoPlayerSpec.hpp"
+ #include <optional>
+-#include "ResizeMode.hpp"
++#include "VideoResizeMode.hpp"
+ #include "SurfaceType.hpp"
+-#include "ListenerSubscription.hpp"
++#include "VideoListenerSubscription.hpp"
+ #include <functional>
+ 
+ namespace margelo::nitro::video {
+diff --git a/node_modules/react-native-video/nitrogen/generated/shared/c++/ListenerSubscription.hpp b/node_modules/react-native-video/nitrogen/generated/shared/c++/VideoListenerSubscription.hpp
+similarity index 100%
+rename from node_modules/react-native-video/nitrogen/generated/shared/c++/ListenerSubscription.hpp
+rename to node_modules/react-native-video/nitrogen/generated/shared/c++/VideoListenerSubscription.hpp
+diff --git a/node_modules/react-native-video/nitrogen/generated/shared/c++/ResizeMode.hpp b/node_modules/react-native-video/nitrogen/generated/shared/c++/VideoResizeMode.hpp
+similarity index 100%
+rename from node_modules/react-native-video/nitrogen/generated/shared/c++/ResizeMode.hpp
+rename to node_modules/react-native-video/nitrogen/generated/shared/c++/VideoResizeMode.hpp

@@ -26,16 +26,20 @@ namespace margelo::nitro::audioanvil { class HybridAnvilFactorySpec; }
 namespace margelo::nitro::audioanvil { class HybridAnvilRecorderSpec; }
 // Forward declaration of `NotificationConfig` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct NotificationConfig; }
-// Forward declaration of `OrphanedRecording` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct OrphanedRecording; }
 // Forward declaration of `PCMChunk` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct PCMChunk; }
+// Forward declaration of `PendingUploadKind` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class PendingUploadKind; }
+// Forward declaration of `PendingUpload` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct PendingUpload; }
 // Forward declaration of `RecorderErrorCode` to properly resolve imports.
 namespace margelo::nitro::audioanvil { enum class RecorderErrorCode; }
 // Forward declaration of `RecorderError` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecorderError; }
 // Forward declaration of `RecordingSegment` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecordingSegment; }
+// Forward declaration of `RecoveredRecording` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct RecoveredRecording; }
 // Forward declaration of `RouteChangeEvent` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RouteChangeEvent; }
 // Forward declaration of `RouteChangeReason` to properly resolve imports.
@@ -60,11 +64,13 @@ namespace NitroAudioAnvil { class HybridAnvilRecorderSpec_cxx; }
 #include "HybridAnvilFactorySpec.hpp"
 #include "HybridAnvilRecorderSpec.hpp"
 #include "NotificationConfig.hpp"
-#include "OrphanedRecording.hpp"
 #include "PCMChunk.hpp"
+#include "PendingUpload.hpp"
+#include "PendingUploadKind.hpp"
 #include "RecorderError.hpp"
 #include "RecorderErrorCode.hpp"
 #include "RecordingSegment.hpp"
+#include "RecoveredRecording.hpp"
 #include "RouteChangeEvent.hpp"
 #include "RouteChangeReason.hpp"
 #include "SpeakerWindow.hpp"
@@ -155,6 +161,21 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     return Func_void_std__exception_ptr_Wrapper(std::move(value));
   }
   
+  // pragma MARK: std::optional<bool>
+  /**
+   * Specialized version of `std::optional<bool>`.
+   */
+  using std__optional_bool_ = std::optional<bool>;
+  inline std::optional<bool> create_std__optional_bool_(const bool& value) noexcept {
+    return std::optional<bool>(value);
+  }
+  inline bool has_value_std__optional_bool_(const std::optional<bool>& optional) noexcept {
+    return optional.has_value();
+  }
+  inline bool get_std__optional_bool_(const std::optional<bool>& optional) noexcept {
+    return optional.value();
+  }
+  
   // pragma MARK: std::optional<NotificationConfig>
   /**
    * Specialized version of `std::optional<NotificationConfig>`.
@@ -230,49 +251,49 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     return vector;
   }
   
-  // pragma MARK: std::vector<OrphanedRecording>
+  // pragma MARK: std::vector<RecoveredRecording>
   /**
-   * Specialized version of `std::vector<OrphanedRecording>`.
+   * Specialized version of `std::vector<RecoveredRecording>`.
    */
-  using std__vector_OrphanedRecording_ = std::vector<OrphanedRecording>;
-  inline std::vector<OrphanedRecording> create_std__vector_OrphanedRecording_(size_t size) noexcept {
-    std::vector<OrphanedRecording> vector;
+  using std__vector_RecoveredRecording_ = std::vector<RecoveredRecording>;
+  inline std::vector<RecoveredRecording> create_std__vector_RecoveredRecording_(size_t size) noexcept {
+    std::vector<RecoveredRecording> vector;
     vector.reserve(size);
     return vector;
   }
   
-  // pragma MARK: std::shared_ptr<Promise<std::vector<OrphanedRecording>>>
+  // pragma MARK: std::shared_ptr<Promise<std::vector<RecoveredRecording>>>
   /**
-   * Specialized version of `std::shared_ptr<Promise<std::vector<OrphanedRecording>>>`.
+   * Specialized version of `std::shared_ptr<Promise<std::vector<RecoveredRecording>>>`.
    */
-  using std__shared_ptr_Promise_std__vector_OrphanedRecording___ = std::shared_ptr<Promise<std::vector<OrphanedRecording>>>;
-  inline std::shared_ptr<Promise<std::vector<OrphanedRecording>>> create_std__shared_ptr_Promise_std__vector_OrphanedRecording___() noexcept {
-    return Promise<std::vector<OrphanedRecording>>::create();
+  using std__shared_ptr_Promise_std__vector_RecoveredRecording___ = std::shared_ptr<Promise<std::vector<RecoveredRecording>>>;
+  inline std::shared_ptr<Promise<std::vector<RecoveredRecording>>> create_std__shared_ptr_Promise_std__vector_RecoveredRecording___() noexcept {
+    return Promise<std::vector<RecoveredRecording>>::create();
   }
-  inline PromiseHolder<std::vector<OrphanedRecording>> wrap_std__shared_ptr_Promise_std__vector_OrphanedRecording___(std::shared_ptr<Promise<std::vector<OrphanedRecording>>> promise) noexcept {
-    return PromiseHolder<std::vector<OrphanedRecording>>(std::move(promise));
+  inline PromiseHolder<std::vector<RecoveredRecording>> wrap_std__shared_ptr_Promise_std__vector_RecoveredRecording___(std::shared_ptr<Promise<std::vector<RecoveredRecording>>> promise) noexcept {
+    return PromiseHolder<std::vector<RecoveredRecording>>(std::move(promise));
   }
   
-  // pragma MARK: std::function<void(const std::vector<OrphanedRecording>& /* result */)>
+  // pragma MARK: std::function<void(const std::vector<RecoveredRecording>& /* result */)>
   /**
-   * Specialized version of `std::function<void(const std::vector<OrphanedRecording>&)>`.
+   * Specialized version of `std::function<void(const std::vector<RecoveredRecording>&)>`.
    */
-  using Func_void_std__vector_OrphanedRecording_ = std::function<void(const std::vector<OrphanedRecording>& /* result */)>;
+  using Func_void_std__vector_RecoveredRecording_ = std::function<void(const std::vector<RecoveredRecording>& /* result */)>;
   /**
-   * Wrapper class for a `std::function<void(const std::vector<OrphanedRecording>& / * result * /)>`, this can be used from Swift.
+   * Wrapper class for a `std::function<void(const std::vector<RecoveredRecording>& / * result * /)>`, this can be used from Swift.
    */
-  class Func_void_std__vector_OrphanedRecording__Wrapper final {
+  class Func_void_std__vector_RecoveredRecording__Wrapper final {
   public:
-    explicit Func_void_std__vector_OrphanedRecording__Wrapper(std::function<void(const std::vector<OrphanedRecording>& /* result */)>&& func): _function(std::make_unique<std::function<void(const std::vector<OrphanedRecording>& /* result */)>>(std::move(func))) {}
-    inline void call(std::vector<OrphanedRecording> result) const noexcept {
+    explicit Func_void_std__vector_RecoveredRecording__Wrapper(std::function<void(const std::vector<RecoveredRecording>& /* result */)>&& func): _function(std::make_unique<std::function<void(const std::vector<RecoveredRecording>& /* result */)>>(std::move(func))) {}
+    inline void call(std::vector<RecoveredRecording> result) const noexcept {
       _function->operator()(result);
     }
   private:
-    std::unique_ptr<std::function<void(const std::vector<OrphanedRecording>& /* result */)>> _function;
+    std::unique_ptr<std::function<void(const std::vector<RecoveredRecording>& /* result */)>> _function;
   } SWIFT_NONCOPYABLE;
-  Func_void_std__vector_OrphanedRecording_ create_Func_void_std__vector_OrphanedRecording_(void* NON_NULL swiftClosureWrapper) noexcept;
-  inline Func_void_std__vector_OrphanedRecording__Wrapper wrap_Func_void_std__vector_OrphanedRecording_(Func_void_std__vector_OrphanedRecording_ value) noexcept {
-    return Func_void_std__vector_OrphanedRecording__Wrapper(std::move(value));
+  Func_void_std__vector_RecoveredRecording_ create_Func_void_std__vector_RecoveredRecording_(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_std__vector_RecoveredRecording__Wrapper wrap_Func_void_std__vector_RecoveredRecording_(Func_void_std__vector_RecoveredRecording_ value) noexcept {
+    return Func_void_std__vector_RecoveredRecording__Wrapper(std::move(value));
   }
   
   // pragma MARK: std::shared_ptr<Promise<RecordingSegment>>
@@ -309,15 +330,117 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     return Func_void_RecordingSegment_Wrapper(std::move(value));
   }
   
-  // pragma MARK: std::vector<std::string>
+  // pragma MARK: std::shared_ptr<Promise<bool>>
   /**
-   * Specialized version of `std::vector<std::string>`.
+   * Specialized version of `std::shared_ptr<Promise<bool>>`.
    */
-  using std__vector_std__string_ = std::vector<std::string>;
-  inline std::vector<std::string> create_std__vector_std__string_(size_t size) noexcept {
-    std::vector<std::string> vector;
+  using std__shared_ptr_Promise_bool__ = std::shared_ptr<Promise<bool>>;
+  inline std::shared_ptr<Promise<bool>> create_std__shared_ptr_Promise_bool__() noexcept {
+    return Promise<bool>::create();
+  }
+  inline PromiseHolder<bool> wrap_std__shared_ptr_Promise_bool__(std::shared_ptr<Promise<bool>> promise) noexcept {
+    return PromiseHolder<bool>(std::move(promise));
+  }
+  
+  // pragma MARK: std::function<void(bool /* result */)>
+  /**
+   * Specialized version of `std::function<void(bool)>`.
+   */
+  using Func_void_bool = std::function<void(bool /* result */)>;
+  /**
+   * Wrapper class for a `std::function<void(bool / * result * /)>`, this can be used from Swift.
+   */
+  class Func_void_bool_Wrapper final {
+  public:
+    explicit Func_void_bool_Wrapper(std::function<void(bool /* result */)>&& func): _function(std::make_unique<std::function<void(bool /* result */)>>(std::move(func))) {}
+    inline void call(bool result) const noexcept {
+      _function->operator()(result);
+    }
+  private:
+    std::unique_ptr<std::function<void(bool /* result */)>> _function;
+  } SWIFT_NONCOPYABLE;
+  Func_void_bool create_Func_void_bool(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_bool_Wrapper wrap_Func_void_bool(Func_void_bool value) noexcept {
+    return Func_void_bool_Wrapper(std::move(value));
+  }
+  
+  // pragma MARK: std::vector<PendingUpload>
+  /**
+   * Specialized version of `std::vector<PendingUpload>`.
+   */
+  using std__vector_PendingUpload_ = std::vector<PendingUpload>;
+  inline std::vector<PendingUpload> create_std__vector_PendingUpload_(size_t size) noexcept {
+    std::vector<PendingUpload> vector;
     vector.reserve(size);
     return vector;
+  }
+  
+  // pragma MARK: std::shared_ptr<Promise<std::vector<PendingUpload>>>
+  /**
+   * Specialized version of `std::shared_ptr<Promise<std::vector<PendingUpload>>>`.
+   */
+  using std__shared_ptr_Promise_std__vector_PendingUpload___ = std::shared_ptr<Promise<std::vector<PendingUpload>>>;
+  inline std::shared_ptr<Promise<std::vector<PendingUpload>>> create_std__shared_ptr_Promise_std__vector_PendingUpload___() noexcept {
+    return Promise<std::vector<PendingUpload>>::create();
+  }
+  inline PromiseHolder<std::vector<PendingUpload>> wrap_std__shared_ptr_Promise_std__vector_PendingUpload___(std::shared_ptr<Promise<std::vector<PendingUpload>>> promise) noexcept {
+    return PromiseHolder<std::vector<PendingUpload>>(std::move(promise));
+  }
+  
+  // pragma MARK: std::function<void(const std::vector<PendingUpload>& /* result */)>
+  /**
+   * Specialized version of `std::function<void(const std::vector<PendingUpload>&)>`.
+   */
+  using Func_void_std__vector_PendingUpload_ = std::function<void(const std::vector<PendingUpload>& /* result */)>;
+  /**
+   * Wrapper class for a `std::function<void(const std::vector<PendingUpload>& / * result * /)>`, this can be used from Swift.
+   */
+  class Func_void_std__vector_PendingUpload__Wrapper final {
+  public:
+    explicit Func_void_std__vector_PendingUpload__Wrapper(std::function<void(const std::vector<PendingUpload>& /* result */)>&& func): _function(std::make_unique<std::function<void(const std::vector<PendingUpload>& /* result */)>>(std::move(func))) {}
+    inline void call(std::vector<PendingUpload> result) const noexcept {
+      _function->operator()(result);
+    }
+  private:
+    std::unique_ptr<std::function<void(const std::vector<PendingUpload>& /* result */)>> _function;
+  } SWIFT_NONCOPYABLE;
+  Func_void_std__vector_PendingUpload_ create_Func_void_std__vector_PendingUpload_(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_std__vector_PendingUpload__Wrapper wrap_Func_void_std__vector_PendingUpload_(Func_void_std__vector_PendingUpload_ value) noexcept {
+    return Func_void_std__vector_PendingUpload__Wrapper(std::move(value));
+  }
+  
+  // pragma MARK: std::shared_ptr<Promise<void>>
+  /**
+   * Specialized version of `std::shared_ptr<Promise<void>>`.
+   */
+  using std__shared_ptr_Promise_void__ = std::shared_ptr<Promise<void>>;
+  inline std::shared_ptr<Promise<void>> create_std__shared_ptr_Promise_void__() noexcept {
+    return Promise<void>::create();
+  }
+  inline PromiseHolder<void> wrap_std__shared_ptr_Promise_void__(std::shared_ptr<Promise<void>> promise) noexcept {
+    return PromiseHolder<void>(std::move(promise));
+  }
+  
+  // pragma MARK: std::function<void()>
+  /**
+   * Specialized version of `std::function<void()>`.
+   */
+  using Func_void = std::function<void()>;
+  /**
+   * Wrapper class for a `std::function<void()>`, this can be used from Swift.
+   */
+  class Func_void_Wrapper final {
+  public:
+    explicit Func_void_Wrapper(std::function<void()>&& func): _function(std::make_unique<std::function<void()>>(std::move(func))) {}
+    inline void call() const noexcept {
+      _function->operator()();
+    }
+  private:
+    std::unique_ptr<std::function<void()>> _function;
+  } SWIFT_NONCOPYABLE;
+  Func_void create_Func_void(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_Wrapper wrap_Func_void(Func_void value) noexcept {
+    return Func_void_Wrapper(std::move(value));
   }
   
   // pragma MARK: std::shared_ptr<HybridAnvilFactorySpec>
@@ -359,13 +482,13 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     return Result<std::shared_ptr<Promise<AnvilPermissionStatus>>>::withError(error);
   }
   
-  // pragma MARK: Result<std::shared_ptr<Promise<std::vector<OrphanedRecording>>>>
-  using Result_std__shared_ptr_Promise_std__vector_OrphanedRecording____ = Result<std::shared_ptr<Promise<std::vector<OrphanedRecording>>>>;
-  inline Result_std__shared_ptr_Promise_std__vector_OrphanedRecording____ create_Result_std__shared_ptr_Promise_std__vector_OrphanedRecording____(const std::shared_ptr<Promise<std::vector<OrphanedRecording>>>& value) noexcept {
-    return Result<std::shared_ptr<Promise<std::vector<OrphanedRecording>>>>::withValue(value);
+  // pragma MARK: Result<std::shared_ptr<Promise<std::vector<RecoveredRecording>>>>
+  using Result_std__shared_ptr_Promise_std__vector_RecoveredRecording____ = Result<std::shared_ptr<Promise<std::vector<RecoveredRecording>>>>;
+  inline Result_std__shared_ptr_Promise_std__vector_RecoveredRecording____ create_Result_std__shared_ptr_Promise_std__vector_RecoveredRecording____(const std::shared_ptr<Promise<std::vector<RecoveredRecording>>>& value) noexcept {
+    return Result<std::shared_ptr<Promise<std::vector<RecoveredRecording>>>>::withValue(value);
   }
-  inline Result_std__shared_ptr_Promise_std__vector_OrphanedRecording____ create_Result_std__shared_ptr_Promise_std__vector_OrphanedRecording____(const std::exception_ptr& error) noexcept {
-    return Result<std::shared_ptr<Promise<std::vector<OrphanedRecording>>>>::withError(error);
+  inline Result_std__shared_ptr_Promise_std__vector_RecoveredRecording____ create_Result_std__shared_ptr_Promise_std__vector_RecoveredRecording____(const std::exception_ptr& error) noexcept {
+    return Result<std::shared_ptr<Promise<std::vector<RecoveredRecording>>>>::withError(error);
   }
   
   // pragma MARK: Result<std::shared_ptr<Promise<RecordingSegment>>>
@@ -377,38 +500,31 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     return Result<std::shared_ptr<Promise<RecordingSegment>>>::withError(error);
   }
   
-  // pragma MARK: std::shared_ptr<Promise<void>>
-  /**
-   * Specialized version of `std::shared_ptr<Promise<void>>`.
-   */
-  using std__shared_ptr_Promise_void__ = std::shared_ptr<Promise<void>>;
-  inline std::shared_ptr<Promise<void>> create_std__shared_ptr_Promise_void__() noexcept {
-    return Promise<void>::create();
+  // pragma MARK: Result<std::shared_ptr<Promise<bool>>>
+  using Result_std__shared_ptr_Promise_bool___ = Result<std::shared_ptr<Promise<bool>>>;
+  inline Result_std__shared_ptr_Promise_bool___ create_Result_std__shared_ptr_Promise_bool___(const std::shared_ptr<Promise<bool>>& value) noexcept {
+    return Result<std::shared_ptr<Promise<bool>>>::withValue(value);
   }
-  inline PromiseHolder<void> wrap_std__shared_ptr_Promise_void__(std::shared_ptr<Promise<void>> promise) noexcept {
-    return PromiseHolder<void>(std::move(promise));
+  inline Result_std__shared_ptr_Promise_bool___ create_Result_std__shared_ptr_Promise_bool___(const std::exception_ptr& error) noexcept {
+    return Result<std::shared_ptr<Promise<bool>>>::withError(error);
   }
   
-  // pragma MARK: std::function<void()>
-  /**
-   * Specialized version of `std::function<void()>`.
-   */
-  using Func_void = std::function<void()>;
-  /**
-   * Wrapper class for a `std::function<void()>`, this can be used from Swift.
-   */
-  class Func_void_Wrapper final {
-  public:
-    explicit Func_void_Wrapper(std::function<void()>&& func): _function(std::make_unique<std::function<void()>>(std::move(func))) {}
-    inline void call() const noexcept {
-      _function->operator()();
-    }
-  private:
-    std::unique_ptr<std::function<void()>> _function;
-  } SWIFT_NONCOPYABLE;
-  Func_void create_Func_void(void* NON_NULL swiftClosureWrapper) noexcept;
-  inline Func_void_Wrapper wrap_Func_void(Func_void value) noexcept {
-    return Func_void_Wrapper(std::move(value));
+  // pragma MARK: Result<std::shared_ptr<Promise<std::vector<PendingUpload>>>>
+  using Result_std__shared_ptr_Promise_std__vector_PendingUpload____ = Result<std::shared_ptr<Promise<std::vector<PendingUpload>>>>;
+  inline Result_std__shared_ptr_Promise_std__vector_PendingUpload____ create_Result_std__shared_ptr_Promise_std__vector_PendingUpload____(const std::shared_ptr<Promise<std::vector<PendingUpload>>>& value) noexcept {
+    return Result<std::shared_ptr<Promise<std::vector<PendingUpload>>>>::withValue(value);
+  }
+  inline Result_std__shared_ptr_Promise_std__vector_PendingUpload____ create_Result_std__shared_ptr_Promise_std__vector_PendingUpload____(const std::exception_ptr& error) noexcept {
+    return Result<std::shared_ptr<Promise<std::vector<PendingUpload>>>>::withError(error);
+  }
+  
+  // pragma MARK: Result<std::shared_ptr<Promise<void>>>
+  using Result_std__shared_ptr_Promise_void___ = Result<std::shared_ptr<Promise<void>>>;
+  inline Result_std__shared_ptr_Promise_void___ create_Result_std__shared_ptr_Promise_void___(const std::shared_ptr<Promise<void>>& value) noexcept {
+    return Result<std::shared_ptr<Promise<void>>>::withValue(value);
+  }
+  inline Result_std__shared_ptr_Promise_void___ create_Result_std__shared_ptr_Promise_void___(const std::exception_ptr& error) noexcept {
+    return Result<std::shared_ptr<Promise<void>>>::withError(error);
   }
   
   // pragma MARK: std::shared_ptr<Promise<std::vector<RecordingSegment>>>
@@ -443,40 +559,6 @@ namespace margelo::nitro::audioanvil::bridge::swift {
   Func_void_std__vector_RecordingSegment_ create_Func_void_std__vector_RecordingSegment_(void* NON_NULL swiftClosureWrapper) noexcept;
   inline Func_void_std__vector_RecordingSegment__Wrapper wrap_Func_void_std__vector_RecordingSegment_(Func_void_std__vector_RecordingSegment_ value) noexcept {
     return Func_void_std__vector_RecordingSegment__Wrapper(std::move(value));
-  }
-  
-  // pragma MARK: std::shared_ptr<Promise<std::string>>
-  /**
-   * Specialized version of `std::shared_ptr<Promise<std::string>>`.
-   */
-  using std__shared_ptr_Promise_std__string__ = std::shared_ptr<Promise<std::string>>;
-  inline std::shared_ptr<Promise<std::string>> create_std__shared_ptr_Promise_std__string__() noexcept {
-    return Promise<std::string>::create();
-  }
-  inline PromiseHolder<std::string> wrap_std__shared_ptr_Promise_std__string__(std::shared_ptr<Promise<std::string>> promise) noexcept {
-    return PromiseHolder<std::string>(std::move(promise));
-  }
-  
-  // pragma MARK: std::function<void(const std::string& /* result */)>
-  /**
-   * Specialized version of `std::function<void(const std::string&)>`.
-   */
-  using Func_void_std__string = std::function<void(const std::string& /* result */)>;
-  /**
-   * Wrapper class for a `std::function<void(const std::string& / * result * /)>`, this can be used from Swift.
-   */
-  class Func_void_std__string_Wrapper final {
-  public:
-    explicit Func_void_std__string_Wrapper(std::function<void(const std::string& /* result */)>&& func): _function(std::make_unique<std::function<void(const std::string& /* result */)>>(std::move(func))) {}
-    inline void call(std::string result) const noexcept {
-      _function->operator()(result);
-    }
-  private:
-    std::unique_ptr<std::function<void(const std::string& /* result */)>> _function;
-  } SWIFT_NONCOPYABLE;
-  Func_void_std__string create_Func_void_std__string(void* NON_NULL swiftClosureWrapper) noexcept;
-  inline Func_void_std__string_Wrapper wrap_Func_void_std__string(Func_void_std__string value) noexcept {
-    return Func_void_std__string_Wrapper(std::move(value));
   }
   
   // pragma MARK: std::function<void(const PCMChunk& /* chunk */)>
@@ -589,6 +671,28 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     return Func_void_StorageWarningEvent_Wrapper(std::move(value));
   }
   
+  // pragma MARK: std::function<void(const std::string& /* manifestPath */)>
+  /**
+   * Specialized version of `std::function<void(const std::string&)>`.
+   */
+  using Func_void_std__string = std::function<void(const std::string& /* manifestPath */)>;
+  /**
+   * Wrapper class for a `std::function<void(const std::string& / * manifestPath * /)>`, this can be used from Swift.
+   */
+  class Func_void_std__string_Wrapper final {
+  public:
+    explicit Func_void_std__string_Wrapper(std::function<void(const std::string& /* manifestPath */)>&& func): _function(std::make_unique<std::function<void(const std::string& /* manifestPath */)>>(std::move(func))) {}
+    inline void call(std::string manifestPath) const noexcept {
+      _function->operator()(manifestPath);
+    }
+  private:
+    std::unique_ptr<std::function<void(const std::string& /* manifestPath */)>> _function;
+  } SWIFT_NONCOPYABLE;
+  Func_void_std__string create_Func_void_std__string(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_std__string_Wrapper wrap_Func_void_std__string(Func_void_std__string value) noexcept {
+    return Func_void_std__string_Wrapper(std::move(value));
+  }
+  
   // pragma MARK: std::function<void(const RecorderError& /* error */)>
   /**
    * Specialized version of `std::function<void(const RecorderError&)>`.
@@ -611,15 +715,6 @@ namespace margelo::nitro::audioanvil::bridge::swift {
     return Func_void_RecorderError_Wrapper(std::move(value));
   }
   
-  // pragma MARK: Result<std::shared_ptr<Promise<void>>>
-  using Result_std__shared_ptr_Promise_void___ = Result<std::shared_ptr<Promise<void>>>;
-  inline Result_std__shared_ptr_Promise_void___ create_Result_std__shared_ptr_Promise_void___(const std::shared_ptr<Promise<void>>& value) noexcept {
-    return Result<std::shared_ptr<Promise<void>>>::withValue(value);
-  }
-  inline Result_std__shared_ptr_Promise_void___ create_Result_std__shared_ptr_Promise_void___(const std::exception_ptr& error) noexcept {
-    return Result<std::shared_ptr<Promise<void>>>::withError(error);
-  }
-  
   // pragma MARK: Result<std::shared_ptr<Promise<std::vector<RecordingSegment>>>>
   using Result_std__shared_ptr_Promise_std__vector_RecordingSegment____ = Result<std::shared_ptr<Promise<std::vector<RecordingSegment>>>>;
   inline Result_std__shared_ptr_Promise_std__vector_RecordingSegment____ create_Result_std__shared_ptr_Promise_std__vector_RecordingSegment____(const std::shared_ptr<Promise<std::vector<RecordingSegment>>>& value) noexcept {
@@ -627,15 +722,6 @@ namespace margelo::nitro::audioanvil::bridge::swift {
   }
   inline Result_std__shared_ptr_Promise_std__vector_RecordingSegment____ create_Result_std__shared_ptr_Promise_std__vector_RecordingSegment____(const std::exception_ptr& error) noexcept {
     return Result<std::shared_ptr<Promise<std::vector<RecordingSegment>>>>::withError(error);
-  }
-  
-  // pragma MARK: Result<std::shared_ptr<Promise<std::string>>>
-  using Result_std__shared_ptr_Promise_std__string___ = Result<std::shared_ptr<Promise<std::string>>>;
-  inline Result_std__shared_ptr_Promise_std__string___ create_Result_std__shared_ptr_Promise_std__string___(const std::shared_ptr<Promise<std::string>>& value) noexcept {
-    return Result<std::shared_ptr<Promise<std::string>>>::withValue(value);
-  }
-  inline Result_std__shared_ptr_Promise_std__string___ create_Result_std__shared_ptr_Promise_std__string___(const std::exception_ptr& error) noexcept {
-    return Result<std::shared_ptr<Promise<std::string>>>::withError(error);
   }
   
   // pragma MARK: Result<AnvilListenerSubscription>

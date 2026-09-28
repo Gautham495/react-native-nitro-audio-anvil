@@ -3,6 +3,11 @@ import Foundation
 
 /// Configures AVAudioSession for recording and forwards session notifications to closures
 /// that are always invoked on the owner queue.
+///
+/// Mode is `.measurement` — this disables Apple's DSP (AGC/noise-suppression/echo-cancel
+/// tuning intended for VoIP) so downstream STT and speaker embedding models receive
+/// calibrated input. If you need the DSP for a call-style workflow, wire mode through
+/// `RecorderConfig` — but the default is deliberately raw.
 final class AnvilAudioSession {
   private let queue: DispatchQueue
   private let callObserver = AnvilCallObserver()
@@ -21,9 +26,11 @@ final class AnvilAudioSession {
   func activate(preferredSampleRate: Double) throws {
     let session = AVAudioSession.sharedInstance()
     do {
-      // `.allowBluetooth` is deprecated in the iOS 26 SDK in favour of `.allowBluetoothHFP`;
-      // it still compiles and behaves identically. Switch once your minimum SDK is 26.
-      try session.setCategory(.playAndRecord, mode: .default, options: [.allowBluetooth, .defaultToSpeaker])
+      try session.setCategory(
+        .playAndRecord,
+        mode: .default,
+        options: [.allowBluetooth, .allowBluetoothA2DP, .defaultToSpeaker]
+      )
       try session.setPreferredSampleRate(preferredSampleRate)
       try session.setActive(true, options: [])
     } catch {

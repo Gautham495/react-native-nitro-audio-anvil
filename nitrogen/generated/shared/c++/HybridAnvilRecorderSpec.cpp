@@ -14,7 +14,9 @@ namespace margelo::nitro::audioanvil {
     HybridObject::loadHybridMethods();
     // load custom methods/properties
     registerHybrids(this, [](Prototype& prototype) {
-      prototype.registerHybridGetter("sessionId", &HybridAnvilRecorderSpec::getSessionId);
+      prototype.registerHybridGetter("recordingId", &HybridAnvilRecorderSpec::getRecordingId);
+      prototype.registerHybridGetter("folderPath", &HybridAnvilRecorderSpec::getFolderPath);
+      prototype.registerHybridGetter("manifestPath", &HybridAnvilRecorderSpec::getManifestPath);
       prototype.registerHybridGetter("state", &HybridAnvilRecorderSpec::getState);
       prototype.registerHybridGetter("totalDurationMs", &HybridAnvilRecorderSpec::getTotalDurationMs);
       prototype.registerHybridGetter("currentSegmentPath", &HybridAnvilRecorderSpec::getCurrentSegmentPath);
@@ -23,7 +25,7 @@ namespace margelo::nitro::audioanvil {
       prototype.registerHybridMethod("resume", &HybridAnvilRecorderSpec::resume);
       prototype.registerHybridMethod("stop", &HybridAnvilRecorderSpec::stop);
       prototype.registerHybridMethod("rotateSegment", &HybridAnvilRecorderSpec::rotateSegment);
-      prototype.registerHybridMethod("extractRange", &HybridAnvilRecorderSpec::extractRange);
+      prototype.registerHybridMethod("markSegmentUploaded", &HybridAnvilRecorderSpec::markSegmentUploaded);
       prototype.registerHybridMethod("addPCMListener", &HybridAnvilRecorderSpec::addPCMListener);
       prototype.registerHybridMethod("addSpeakerWindowListener", &HybridAnvilRecorderSpec::addSpeakerWindowListener);
       prototype.registerHybridMethod("addInterruptionListener", &HybridAnvilRecorderSpec::addInterruptionListener);
@@ -31,6 +33,7 @@ namespace margelo::nitro::audioanvil {
       prototype.registerHybridMethod("addPermissionChangeListener", &HybridAnvilRecorderSpec::addPermissionChangeListener);
       prototype.registerHybridMethod("addStorageWarningListener", &HybridAnvilRecorderSpec::addStorageWarningListener);
       prototype.registerHybridMethod("addSegmentCompletedListener", &HybridAnvilRecorderSpec::addSegmentCompletedListener);
+      prototype.registerHybridMethod("addManifestUpdatedListener", &HybridAnvilRecorderSpec::addManifestUpdatedListener);
       prototype.registerHybridMethod("addErrorListener", &HybridAnvilRecorderSpec::addErrorListener);
     });
   }

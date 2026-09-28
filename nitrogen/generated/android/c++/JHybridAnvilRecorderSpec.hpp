@@ -50,7 +50,9 @@ namespace margelo::nitro::audioanvil {
 
   public:
     // Properties
-    std::string getSessionId() override;
+    std::string getRecordingId() override;
+    std::string getFolderPath() override;
+    std::string getManifestPath() override;
     RecorderState getState() override;
     double getTotalDurationMs() override;
     std::string getCurrentSegmentPath() override;
@@ -62,7 +64,7 @@ namespace margelo::nitro::audioanvil {
     std::shared_ptr<Promise<void>> resume() override;
     std::shared_ptr<Promise<std::vector<RecordingSegment>>> stop() override;
     std::shared_ptr<Promise<RecordingSegment>> rotateSegment() override;
-    std::shared_ptr<Promise<std::string>> extractRange(double startMs, double endMs) override;
+    std::shared_ptr<Promise<void>> markSegmentUploaded(const std::string& filename) override;
     AnvilListenerSubscription addPCMListener(const std::function<void(const PCMChunk& /* chunk */)>& listener) override;
     AnvilListenerSubscription addSpeakerWindowListener(const std::function<void(const SpeakerWindow& /* window */)>& listener) override;
     AnvilListenerSubscription addInterruptionListener(const std::function<void(const AnvilInterruptionEvent& /* event */)>& listener) override;
@@ -70,6 +72,7 @@ namespace margelo::nitro::audioanvil {
     AnvilListenerSubscription addPermissionChangeListener(const std::function<void(AnvilPermissionStatus /* status */)>& listener) override;
     AnvilListenerSubscription addStorageWarningListener(const std::function<void(const StorageWarningEvent& /* event */)>& listener) override;
     AnvilListenerSubscription addSegmentCompletedListener(const std::function<void(const RecordingSegment& /* segment */)>& listener) override;
+    AnvilListenerSubscription addManifestUpdatedListener(const std::function<void(const std::string& /* manifestPath */)>& listener) override;
     AnvilListenerSubscription addErrorListener(const std::function<void(const RecorderError& /* error */)>& listener) override;
 
   private:

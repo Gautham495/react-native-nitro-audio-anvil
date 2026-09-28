@@ -26,10 +26,12 @@ namespace margelo::nitro::audioanvil { class HybridAnvilRecorderSpec; }
 namespace margelo::nitro::audioanvil { enum class InterruptionPolicy; }
 // Forward declaration of `NotificationConfig` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct NotificationConfig; }
-// Forward declaration of `OrphanedRecording` to properly resolve imports.
-namespace margelo::nitro::audioanvil { struct OrphanedRecording; }
 // Forward declaration of `PCMChunk` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct PCMChunk; }
+// Forward declaration of `PendingUploadKind` to properly resolve imports.
+namespace margelo::nitro::audioanvil { enum class PendingUploadKind; }
+// Forward declaration of `PendingUpload` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct PendingUpload; }
 // Forward declaration of `RecorderConfig` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecorderConfig; }
 // Forward declaration of `RecorderErrorCode` to properly resolve imports.
@@ -40,6 +42,8 @@ namespace margelo::nitro::audioanvil { struct RecorderError; }
 namespace margelo::nitro::audioanvil { enum class RecorderState; }
 // Forward declaration of `RecordingSegment` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RecordingSegment; }
+// Forward declaration of `RecoveredRecording` to properly resolve imports.
+namespace margelo::nitro::audioanvil { struct RecoveredRecording; }
 // Forward declaration of `RouteChangeEvent` to properly resolve imports.
 namespace margelo::nitro::audioanvil { struct RouteChangeEvent; }
 // Forward declaration of `RouteChangeReason` to properly resolve imports.
@@ -59,13 +63,15 @@ namespace margelo::nitro::audioanvil { struct StorageWarningEvent; }
 #include "HybridAnvilRecorderSpec.hpp"
 #include "InterruptionPolicy.hpp"
 #include "NotificationConfig.hpp"
-#include "OrphanedRecording.hpp"
 #include "PCMChunk.hpp"
+#include "PendingUpload.hpp"
+#include "PendingUploadKind.hpp"
 #include "RecorderConfig.hpp"
 #include "RecorderError.hpp"
 #include "RecorderErrorCode.hpp"
 #include "RecorderState.hpp"
 #include "RecordingSegment.hpp"
+#include "RecoveredRecording.hpp"
 #include "RouteChangeEvent.hpp"
 #include "RouteChangeReason.hpp"
 #include "SpeakerWindow.hpp"

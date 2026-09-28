@@ -111,8 +111,16 @@ namespace margelo::nitro::audioanvil {
 
   public:
     // Properties
-    inline std::string getSessionId() noexcept override {
-      auto __result = _swiftPart.getSessionId();
+    inline std::string getRecordingId() noexcept override {
+      auto __result = _swiftPart.getRecordingId();
+      return __result;
+    }
+    inline std::string getFolderPath() noexcept override {
+      auto __result = _swiftPart.getFolderPath();
+      return __result;
+    }
+    inline std::string getManifestPath() noexcept override {
+      auto __result = _swiftPart.getManifestPath();
       return __result;
     }
     inline RecorderState getState() noexcept override {
@@ -169,8 +177,8 @@ namespace margelo::nitro::audioanvil {
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline std::shared_ptr<Promise<std::string>> extractRange(double startMs, double endMs) override {
-      auto __result = _swiftPart.extractRange(std::forward<decltype(startMs)>(startMs), std::forward<decltype(endMs)>(endMs));
+    inline std::shared_ptr<Promise<void>> markSegmentUploaded(const std::string& filename) override {
+      auto __result = _swiftPart.markSegmentUploaded(filename);
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
       }
@@ -227,6 +235,14 @@ namespace margelo::nitro::audioanvil {
     }
     inline AnvilListenerSubscription addSegmentCompletedListener(const std::function<void(const RecordingSegment& /* segment */)>& listener) override {
       auto __result = _swiftPart.addSegmentCompletedListener(listener);
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline AnvilListenerSubscription addManifestUpdatedListener(const std::function<void(const std::string& /* manifestPath */)>& listener) override {
+      auto __result = _swiftPart.addManifestUpdatedListener(listener);
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
       }
