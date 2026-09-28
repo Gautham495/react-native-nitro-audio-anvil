@@ -78,7 +78,10 @@ export const recorderService = {
 
 export function makeRecordingId(): string {
   // Compact and sortable — folder listing groups by time. No slashes / dots.
-  const iso = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+  const iso = new Date()
+    .toISOString()
+    .replace(/[^0-9]/g, '')
+    .slice(0, 14);
   const rand = Math.random().toString(36).slice(2, 8);
   return `rec-${iso}-${rand}`;
 }
