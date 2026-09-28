@@ -59,14 +59,14 @@ cd ios && pod install
 >   - `AVAudioSession` interruption / route / media-server-reset handling, `.default` mode
 >   - CallKit call detection, `audio` background mode
 >   - Auto-resume with exponential backoff (200 ms → 400 ms → 800 ms → 1.6 s → 3.2 s) when foreground
->   - See [iOS quirks](./docs/ios-quirks.md) for platform-specific gotchas (background reactivation bug, CarPlay, Bluetooth chaos, AAC-LC bitrate ceiling)
+>   - See [iOS quirks](./ios-quirks.md) for platform-specific gotchas (background reactivation bug, CarPlay, Bluetooth chaos, AAC-LC bitrate ceiling)
 > - **Android**: Fully tested and production-ready ✅
 >   - `AudioRecord` on a dedicated audio thread → `MediaCodec` AAC-LC encoder → ADTS wrapping
 >   - Microphone foreground service
 >   - Audio focus + `isClientSilenced` interruption detection
 >   - Auto-resume with exponential backoff (300 ms → 600 ms → 1.2 s → 2.4 s → 4.8 s) when foreground
 >   - Requires Android 7.0+ (API 24+)
->   - See [OEM quirks](./docs/oem-quirks.md) for per-brand walkthroughs (Xiaomi, Huawei, Oppo, Vivo, OnePlus, Samsung, and more)
+>   - See [OEM quirks](./oem-quirks.md) for per-brand walkthroughs (Xiaomi, Huawei, Oppo, Vivo, OnePlus, Samsung, and more)
 > - Tested on React Native 0.85+ with the New Architecture (required by Nitro Modules). PRs welcome for lower RN versions.
 
 ---
@@ -106,12 +106,12 @@ The example app records with Anvil, streams each segment live to Cloudflare R2 v
 
 For long-form microphone recording, the library itself is only half the story. The other half is knowing the platform quirks that affect background audio.
 
-| Doc                                          | When to read                                                                          |
-| -------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [iOS quirks](./docs/ios-quirks.md)           | Before shipping on iOS — background reactivation bug, CarPlay, Bluetooth, bitrate ceiling |
-| [OEM quirks](./docs/oem-quirks.md)           | Before shipping on Android — per-brand setup for Xiaomi, Huawei, Oppo, Vivo, and more |
-| [Troubleshooting](./docs/troubleshooting.md) | When something breaks — symptom-first debugging with hypothesis and fix per symptom   |
-| [Recovery](./docs/recovery.md)               | Folder-per-recording layout, `discoverOrphanedRecordings`, resume/finalize/discard    |
+| Doc                                     | When to read                                                                              |
+| --------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [iOS quirks](./ios-quirks.md)           | Before shipping on iOS — background reactivation bug, CarPlay, Bluetooth, bitrate ceiling |
+| [OEM quirks](./oem-quirks.md)           | Before shipping on Android — per-brand setup for Xiaomi, Huawei, Oppo, Vivo, and more     |
+| [Troubleshooting](./troubleshooting.md) | When something breaks — symptom-first debugging with hypothesis and fix per symptom       |
+| [Recovery](./recovery.md)               | Folder-per-recording layout, `discoverOrphanedRecordings`, resume/finalize/discard        |
 
 Every real-world quirk we have hit — background reactivation permanent-fail on iOS, HyperOS killing foreground services, WhatsApp holding the mic HAL, sample rate changes on Bluetooth route, AAC-LC bitrate ceiling at low sample rates — is documented in one of these files. If you hit something not covered, file an issue and it will land here.
 
@@ -119,24 +119,24 @@ Every real-world quirk we have hit — background reactivation permanent-fail on
 
 ## 🧠 Overview
 
-| Feature                     | Implementation                                                                            |
-| --------------------------- | ----------------------------------------------------------------------------------------- |
-| Format                      | Mono ADTS AAC-LC, self-describing frames, no container index, no finalize step            |
+| Feature                     | Implementation                                                                             |
+| --------------------------- | ------------------------------------------------------------------------------------------ |
+| Format                      | Mono ADTS AAC-LC, self-describing frames, no container index, no finalize step             |
 | Layout                      | Folder-per-recording under a caller-owned `recordingId`; one `manifest.m3u8` + `NNNNN.aac` |
 | Durability                  | `fsync` every `fsyncIntervalMs` (default 500 ms); manifest rewritten tmp+rename+dir-fsync  |
-| Segmentation                | New file every `segmentDurationMs`, on pause, interruption and route change               |
+| Segmentation                | New file every `segmentDurationMs`, on pause, interruption and route change                |
 | Live streaming              | HLS out of the box — same segments feed local disk and per-file sync agent to your CDN     |
-| Phone calls / Siri / alarms | Segment finalized **before** the OS takes the mic; event emitted                          |
-| Auto-resume                 | Exponential backoff retry when the OS releases the mic — foreground-gated                 |
-| Bluetooth / headset changes | Route event + segment rotation so no file mixes two input devices                         |
-| Background recording        | iOS `audio` background mode / Android microphone foreground service                       |
-| Crash & force-quit recovery | `discoverOrphanedRecordings` → `RecoveredRecording[]` with three verbs                    |
-| Live PCM stream             | `PCMChunk`s (default 100 ms) for streaming speech-to-text, with sequence numbers          |
-| Speaker windows             | Overlapping `SpeakerWindow`s (default 1.5 s / 750 ms hop) for speaker labelling           |
-| Stitching                   | `concatenate(dir, id, out)` byte-copies ADTS payloads — no re-encoding, no quality loss   |
-| Upload recovery             | Sync agent writes `.uploaded` sentinels; `retryPendingUploads` returns what didn't ship   |
-| Storage guard               | Warning event below a configurable free-space threshold                                   |
-| Threading                   | One owner thread per recorder, no locks, no JS-thread blocking                            |
+| Phone calls / Siri / alarms | Segment finalized **before** the OS takes the mic; event emitted                           |
+| Auto-resume                 | Exponential backoff retry when the OS releases the mic — foreground-gated                  |
+| Bluetooth / headset changes | Route event + segment rotation so no file mixes two input devices                          |
+| Background recording        | iOS `audio` background mode / Android microphone foreground service                        |
+| Crash & force-quit recovery | `discoverOrphanedRecordings` → `RecoveredRecording[]` with three verbs                     |
+| Live PCM stream             | `PCMChunk`s (default 100 ms) for streaming speech-to-text, with sequence numbers           |
+| Speaker windows             | Overlapping `SpeakerWindow`s (default 1.5 s / 750 ms hop) for speaker labelling            |
+| Stitching                   | `concatenate(dir, id, out)` byte-copies ADTS payloads — no re-encoding, no quality loss    |
+| Upload recovery             | Sync agent writes `.uploaded` sentinels; `retryPendingUploads` returns what didn't ship    |
+| Storage guard               | Warning event below a configurable free-space threshold                                    |
+| Threading                   | One owner thread per recorder, no locks, no JS-thread blocking                             |
 
 ---
 
@@ -144,18 +144,18 @@ Every real-world quirk we have hit — background reactivation permanent-fail on
 
 Every design decision in Anvil starts from the question "what happens if the process disappears right now?" Here is the answer for each failure mode:
 
-| Failure                                                 | What Anvil does                                                                                                                                                | What you get back                                                          |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Failure                                                 | What Anvil does                                                                                                                                                            | What you get back                                                           |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | Incoming phone call                                     | iOS `AVAudioSession.interruptionNotification` / Android audio focus loss → current segment is finalized (encoded, `fsync`ed, manifest updated) before the OS takes the mic | An `interruption` event with a valid `.aac` path, then optional auto-resume |
-| Another app takes the mic (WhatsApp, Voice Memos, Siri) | Segment finalized before the OS reassigns the mic; when the other app releases it, native retries with exponential backoff until it succeeds or gives up       | Recording resumes seamlessly when the other app is done                    |
-| Bluetooth headset connect / disconnect                  | Route change → current segment finalized so no file mixes two input devices                                                                                    | A `routeChange` event and a fresh segment for the new device               |
-| App backgrounded / screen locked                        | iOS `audio` background mode / Android microphone foreground service keeps the capture running                                                                  | Recording continues; timer keeps advancing; segments keep landing          |
-| Interruption ends while app is backgrounded             | Both platforms have OS bugs blocking background auto-resume (documented). Native emits a "deferred" error; JS wires a foreground listener to retry on return   | Recording resumes the moment the user opens the app                        |
-| App force-quit                                          | Whatever was `fsync`ed is on disk. Every ADTS frame that made it is self-describing and playable. Discovery salvages any trailing unreferenced segment.        | Every segment written, up to the last 500 ms                               |
-| Process crash / OOM kill                                | Same as force-quit — nothing to finalize, nothing to lose except the last 500 ms                                                                               | Same as above                                                              |
-| Device reboot / battery dies                            | Same as force-quit                                                                                                                                             | Same as above                                                              |
-| Streaming upload fails mid-recording                    | JS-owned sync agent handles retries with its own policy. Anvil records success via `.uploaded` sentinels; `retryPendingUploads` returns what didn't confirm    | The queue you drain on next launch                                         |
-| Free space low                                          | Warning event on `start()` and every rotation, before it becomes an error                                                                                      | Time to prompt the user or rotate off the device                           |
+| Another app takes the mic (WhatsApp, Voice Memos, Siri) | Segment finalized before the OS reassigns the mic; when the other app releases it, native retries with exponential backoff until it succeeds or gives up                   | Recording resumes seamlessly when the other app is done                     |
+| Bluetooth headset connect / disconnect                  | Route change → current segment finalized so no file mixes two input devices                                                                                                | A `routeChange` event and a fresh segment for the new device                |
+| App backgrounded / screen locked                        | iOS `audio` background mode / Android microphone foreground service keeps the capture running                                                                              | Recording continues; timer keeps advancing; segments keep landing           |
+| Interruption ends while app is backgrounded             | Both platforms have OS bugs blocking background auto-resume (documented). Native emits a "deferred" error; JS wires a foreground listener to retry on return               | Recording resumes the moment the user opens the app                         |
+| App force-quit                                          | Whatever was `fsync`ed is on disk. Every ADTS frame that made it is self-describing and playable. Discovery salvages any trailing unreferenced segment.                    | Every segment written, up to the last 500 ms                                |
+| Process crash / OOM kill                                | Same as force-quit — nothing to finalize, nothing to lose except the last 500 ms                                                                                           | Same as above                                                               |
+| Device reboot / battery dies                            | Same as force-quit                                                                                                                                                         | Same as above                                                               |
+| Streaming upload fails mid-recording                    | JS-owned sync agent handles retries with its own policy. Anvil records success via `.uploaded` sentinels; `retryPendingUploads` returns what didn't confirm                | The queue you drain on next launch                                          |
+| Free space low                                          | Warning event on `start()` and every rotation, before it becomes an error                                                                                                  | Time to prompt the user or rotate off the device                            |
 
 There is no moov atom, no encoder state, no finalize step to skip. Every ADTS frame is self-describing; the manifest is rewritten atomically; the file on disk is always a valid AAC/HLS artifact, at every instant.
 
@@ -226,9 +226,9 @@ The example app wires all of this. See [`example/src/App.tsx`](./example/src/App
 
 > [!TIP]
 >
-> - **iOS-specific quirks** (background reactivation permanent-fail bug, CarPlay routing chaos, media services reset, AAC-LC bitrate ceiling at low sample rates) are documented in [docs/ios-quirks.md](./docs/ios-quirks.md). Read this before shipping on iOS.
-> - **Android OEM quirks** (Xiaomi/HyperOS, Huawei, Oppo, Vivo, Realme, OnePlus, Samsung) may still kill your foreground service on screen-off despite everything the library does. This is a device-level setting the user has to change — see [docs/oem-quirks.md](./docs/oem-quirks.md) for a per-brand walkthrough, or link users to [dontkillmyapp.com](https://dontkillmyapp.com/) which stays up to date with each OEM's UI changes.
-> - **Something not working?** See [docs/troubleshooting.md](./docs/troubleshooting.md) for symptom-first debugging.
+> - **iOS-specific quirks** (background reactivation permanent-fail bug, CarPlay routing chaos, media services reset, AAC-LC bitrate ceiling at low sample rates) are documented in [ios-quirks.md](./ios-quirks.md). Read this before shipping on iOS.
+> - **Android OEM quirks** (Xiaomi/HyperOS, Huawei, Oppo, Vivo, Realme, OnePlus, Samsung) may still kill your foreground service on screen-off despite everything the library does. This is a device-level setting the user has to change — see [oem-quirks.md](./oem-quirks.md) for a per-brand walkthrough, or link users to [dontkillmyapp.com](https://dontkillmyapp.com/) which stays up to date with each OEM's UI changes.
+> - **Something not working?** See [troubleshooting.md](./troubleshooting.md) for symptom-first debugging.
 
 ---
 
@@ -240,15 +240,15 @@ import { Anvil, type AnvilRecorder } from 'react-native-nitro-audio-anvil';
 if ((await Anvil.requestPermission()) !== 'granted') return;
 
 const recordingId = `rec-${Date.now()}`; // yours to own — meeting id, call id, uuid, anything
-                                          // that's a single path segment (no /, \, .., NUL, ≤256 chars)
+// that's a single path segment (no /, \, .., NUL, ≤256 chars)
 
 const recorder: AnvilRecorder = await Anvil.createRecorder({
   outputDirectory: `${documentDirectory}/recordings`, // plain path or file:// URL
   recordingId,
   segmentDurationMs: 6_000,
   fsyncIntervalMs: 500,
-  sampleRate: 48000,          // mic-native on modern iPhones; skips resampler
-  aacBitrate: 96000,           // AAC-LC has a per-sample-rate ceiling — see troubleshooting.md
+  sampleRate: 48000, // mic-native on modern iPhones; skips resampler
+  aacBitrate: 96000, // AAC-LC has a per-sample-rate ceiling — see troubleshooting.md
   streamChunkMs: 100,
   speakerWindowMs: 1500,
   speakerWindowHopMs: 750,
@@ -283,7 +283,7 @@ recorder.addErrorListener((error) => log.error(error.code, error.message));
 
 await recorder.start();
 // ...
-const segments = await recorder.stop();  // seals manifest.m3u8 with #EXT-X-ENDLIST
+const segments = await recorder.stop(); // seals manifest.m3u8 with #EXT-X-ENDLIST
 
 pcm.remove();
 speaker.remove();
@@ -325,7 +325,7 @@ const orphans = await Anvil.discoverOrphanedRecordings(recordingsDir);
 //   Discard:  Anvil.deleteRecording(dir, o.recordingId)
 ```
 
-Discovery verifies every referenced segment as parseable ADTS, salvages any unreferenced trailing segment if it parses, drops it if it doesn't, and returns `folderPath`, `manifestPath`, `segments`, `totalDurationMs`, and `wasInterrupted`. See [`docs/recovery.md`](./docs/recovery.md) for the full pattern and [`example/src/RecoveryCard.tsx`](./example/src/RecoveryCard.tsx) for the reference UI.
+Discovery verifies every referenced segment as parseable ADTS, salvages any unreferenced trailing segment if it parses, drops it if it doesn't, and returns `folderPath`, `manifestPath`, `segments`, `totalDurationMs`, and `wasInterrupted`. See [`recovery.md`](./recovery.md) for the full pattern and [`example/src/RecoveryCard.tsx`](./example/src/RecoveryCard.tsx) for the reference UI.
 
 ### Resuming pending uploads
 
@@ -407,7 +407,7 @@ For the archival case — one file at the end — call `Anvil.concatenate` after
 </array>
 ```
 
-Without `UIBackgroundModes = audio`, iOS suspends your app within 30 seconds of backgrounding and your recording stops. See [iOS quirks](./docs/ios-quirks.md) for the full explanation.
+Without `UIBackgroundModes = audio`, iOS suspends your app within 30 seconds of backgrounding and your recording stops. See [iOS quirks](./ios-quirks.md) for the full explanation.
 
 ### Android
 
@@ -446,7 +446,7 @@ if (Platform.OS === 'android' && Platform.Version >= 33) {
 
 `keepAwakeInBackground: true` requires `notification` in the config and must be started while the app is in the foreground (Android 14+ rule).
 
-**Aggressive Android OEMs** (Xiaomi/HyperOS, Huawei, Oppo, Vivo, Realme, older OnePlus) may still kill your foreground service on screen-off despite these permissions. See [OEM quirks](./docs/oem-quirks.md) for per-brand user setup steps.
+**Aggressive Android OEMs** (Xiaomi/HyperOS, Huawei, Oppo, Vivo, Realme, older OnePlus) may still kill your foreground service on screen-off despite these permissions. See [OEM quirks](./oem-quirks.md) for per-brand user setup steps.
 
 ---
 
@@ -476,12 +476,12 @@ All timestamps (`PCMChunk.timestampMs`, `SpeakerWindow.startMs`, `RecordingSegme
 
 ## 🧩 Supported Platforms
 
-| Platform             | Status                                                                                                                                                     |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **iOS**              | ✅ Fully Supported                                                                                                                                         |
-| **Android**          | ✅ Fully Supported                                                                                                                                         |
-| **iOS Simulator**    | ⚠️ Partial — records fine but interruption / route / background behaviors don't fire realistically. See [iOS quirks](./docs/ios-quirks.md#simulator-lies). |
-| **Android Emulator** | ⚠️ Partial — audio focus events unreliable when other apps take the mic. Test on real device for interruption flows.                                       |
+| Platform             | Status                                                                                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **iOS**              | ✅ Fully Supported                                                                                                                                    |
+| **Android**          | ✅ Fully Supported                                                                                                                                    |
+| **iOS Simulator**    | ⚠️ Partial — records fine but interruption / route / background behaviors don't fire realistically. See [iOS quirks](./ios-quirks.md#simulator-lies). |
+| **Android Emulator** | ⚠️ Partial — audio focus events unreliable when other apps take the mic. Test on real device for interruption flows.                                  |
 
 Interruption, route-change and background behaviour cannot be verified on simulators — test on a real device before shipping. On both platforms, the simulator/emulator's virtual audio HAL does not behave like real hardware, so `AUDIOFOCUS_GAIN` (Android) or interruption end notifications (iOS) may not fire when another emulator app releases the mic.
 
